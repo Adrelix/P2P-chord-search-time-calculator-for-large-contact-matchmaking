@@ -45,21 +45,67 @@ class track:
         self.node_to_client_upload_time = node_to_client_upload_time
 
 
+# Time required to search through the uploaded contactbook and compare it to the nodes information
+# Based on our experiment (see xxxx)
+def get_search_time(package_size, amount_of_packages):
+
+    num_list = [10000, 25000, 50000, 100000,
+                250000, 500000, 1000000, 1500000, 2000000, 5000000]
+    closest_number = min(num_list, key=lambda x: abs(x-package_size))
+    print(closest_number)
+
+    if closest_number == 10000:
+        search_time_mean = 38.72
+        search_time_spread = 3.45
+    elif closest_number == 25000:
+        search_time_mean = 27.72
+        search_time_spread = 1.50
+    elif closest_number == 50000:
+        search_time_mean = 30.86
+        search_time_spread = 2.91
+    elif closest_number == 100000:
+        search_time_mean = 36
+        search_time_spread = 3.16
+    elif closest_number == 250000:
+        search_time_mean = 61
+        search_time_spread = 17.67
+    elif closest_number == 500000:
+        search_time_mean = 83.29
+        search_time_spread = 4.61
+    elif closest_number == 1000000:
+        search_time_mean = 141.43
+        search_time_spread = 8.14
+    elif closest_number == 1500000:
+        search_time_mean = 207.57
+        search_time_spread = 17.26
+    elif closest_number == 2000000:
+        search_time_mean = 271.57
+        search_time_spread = 15.79
+    elif closest_number == 5000000:
+        search_time_mean = 810.86
+        search_time_spread = 35.33
+    return np.random.normal(search_time_mean, search_time_spread, amount_of_packages)
+
+
 # Set Values
 # All times are in milliseconds
 database_size = 10000000000
 amount_of_nodes = database_size
-package_size = math.floor(database_size/1000)
+package_size = math.floor(database_size/50)
+package_size = 1000000
 amount_of_packages = math.floor(database_size/package_size)
+amount_of_packages = 50
 contact_book_size = 1000
 hash_table_creation_time = 30
 time_to_send_requests = amount_of_packages
 
-searchTime = 300
+
+search_times = get_search_time(package_size, amount_of_packages)
 
 print("Amount of nodes to collect from:", amount_of_packages)
 print("Average package size:", package_size)
-
+print(search_times)
+time.sleep(20)
 
 # https://www.speedtest.net/global-index
 latency_mean = 30
@@ -103,13 +149,11 @@ for track_id in range(amount_of_packages):
     find_node_time = path_lengths[track_id] * \
         latency_mean * connection_protocol_multiplier
 
+    search_contacts_time = search_times[track_id]
+
     # Time required to establish a TCP connection to the final node
     establish_connection_time = latencies[track_id] * \
         connection_protocol_multiplier
-
-    # Time required to search through the uploaded contactbook and compare it to the nodes information
-    # Based on our experiment (see xxxx)
-    search_contacts_time = searchTime
 
     # Calculate the maximum TCP throughput with standard window size 65536 Bytes = 524288 bits
     max_TCP_throughput = 0.524288 / (latencies[track_id] / 1000)
@@ -228,12 +272,12 @@ while client_status != CLIENT_DONE:
     update_track_status()
 
     # Terminal aesthetic (works for max 80 tracks):
-    # os.system('cls' if os.name == 'nt' else 'clear')
-    # print("TIME: ", ms_count, "ms", sep='')
-    # print("CLIENT         STATUS: ", client_status, "\n", sep='')
-    # for track in tracks:
-    #    print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
-    #         "              TIME LEFT: ", track.time_left, "ms", sep='')
-    # time.sleep(0.1)
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("TIME: ", ms_count, "ms", sep='')
+    print("CLIENT         STATUS: ", client_status, "\n", sep='')
+    for track in tracks:
+        print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
+              "              TIME LEFT: ", track.time_left, "ms", sep='')
+    time.sleep(0.1)
 
 print("TIME: ", ms_count, "ms", sep='')
