@@ -52,7 +52,6 @@ def get_search_time(package_size, amount_of_packages):
     num_list = [10000, 25000, 50000, 100000,
                 250000, 500000, 1000000, 1500000, 2000000, 5000000]
     closest_number = min(num_list, key=lambda x: abs(x-package_size))
-    print(closest_number)
 
     if closest_number == 10000:
         search_time_mean = 38.72
@@ -91,10 +90,8 @@ def get_search_time(package_size, amount_of_packages):
 # All times are in milliseconds
 database_size = 10000000000
 amount_of_nodes = database_size
-package_size = math.floor(database_size/50)
-package_size = 1000000
-amount_of_packages = math.floor(database_size/package_size)
 amount_of_packages = 50
+package_size = math.floor(database_size/amount_of_packages)
 contact_book_size = 1000
 hash_table_creation_time = 30
 time_to_send_requests = amount_of_packages
