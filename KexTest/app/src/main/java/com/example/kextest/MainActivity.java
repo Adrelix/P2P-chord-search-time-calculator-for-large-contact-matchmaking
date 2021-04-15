@@ -2,6 +2,7 @@ package com.example.kextest;
 
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -36,15 +37,24 @@ import java.lang.*;
 public class MainActivity extends AppCompatActivity {
 
     private int numberOfTotalUsers = 100000000;
-    private int numberOfUsers = 100000;
+    private int numberOfUsers = 2000000;
     private int numberOfContacts = 100;
     private String[] hashedRegUsers;
-
+    private int iteration = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        hashedRegUsers = new String[numberOfUsers];
+        for(int c = 0; c < numberOfUsers; c++){
+            try {
+                hashedRegUsers[c] = sha256(""+ c);
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -93,35 +103,48 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public long getFile(){
+        long startGetFile = System.currentTimeMillis();
+        SharedPreferences prefs = this.getSharedPreferences(
+                "com.example.kexTest", Context.MODE_PRIVATE
+        );
+        long endGetFile = System.currentTimeMillis();
+
+        String data = prefs.getString("db", "");
+
+        if(data.length() == 0){
+            SharedPreferences.Editor editor = prefs.edit();
+            StringBuilder sttrb = new StringBuilder();
+            for(int i = 0 ; i<1000000; i++){
+                sttrb.append(i+"/n");
+            }
+            editor.putString("db", sttrb.toString());
+        }
+        return endGetFile - startGetFile;
+    }
+
     public void start(View view) throws NoSuchAlgorithmException {
         int[] testContactsSizes = new int[]{50, 100, 250, 500, 750, 1000};
-        int[] testPackageSizes = new int[]{10000, 25000, 50000, 100000, 250000, 500000}; //, 1000000, 1500000, 2000000
+        int[] testPackageSizes = new int[]{ 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 1500000, 2000000, 3000000, 4000000, 5000000};
 
-//        for(int contactSize : testContactsSizes){
-//            for(int packageSize: testPackageSizes){
-//                numberOfContacts = contactSize;
-//                numberOfUsers =  packageSize;
-//                startTest();
-//            }
-//        }
+        numberOfContacts = 1000;
+//        numberOfUsers =  testPackageSizes[9];
+        startTest();
 
-        for(int i = 0 ;i <10 ; i++){
+        iteration++;
+
+
+ /*       for(int i = 0 ;i <10 ; i++){
             numberOfContacts = 1000;
             numberOfUsers =  100000;
             getApplicationContext().getCacheDir().delete();
             startTest();
         }
-
+*/
     }
 
 
     public void startTest() throws NoSuchAlgorithmException {
-
-
-        hashedRegUsers = new String[numberOfUsers];
-        for(int c = 0; c < numberOfUsers; c++){
-            hashedRegUsers[c] = sha256(""+ c);
-        }
 
 
         long startClientSetup = System.currentTimeMillis();
@@ -143,9 +166,9 @@ public class MainActivity extends AppCompatActivity {
 
 
         info.setText("Testing:\n"+ "Number of users: " + numberOfUsers + "\nNumber of contacts: " + numberOfContacts);
-        clientSetup.setText(clientSetup.getText() + "\n"+ clientResult + "ms");
+        //clientSetup.setText(clientSetup.getText() + "\n"+ clientResult + "ms");
         nodeAnswer.setText(nodeAnswer.getText() + "\n"+ nodeResult + "ms");
-        answerList.setText("Found: " + results.size() + " contacts");
+        //answerList.setText("Found: " + results.size() + " contacts");
 
 
 //        StringBuilder strb = new StringBuilder();
