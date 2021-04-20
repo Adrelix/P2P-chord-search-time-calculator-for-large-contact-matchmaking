@@ -94,7 +94,7 @@ z = []
 
 # amount of users in millions
 a_min = 1
-a_max = 20
+a_max = 10
 
 # amount of packages
 p_min = 1
@@ -102,7 +102,8 @@ p_max = 50
 p_inc_size = 5
 
 # amount of iteration for each combination
-i_tot = 3
+i_tot = 100
+
 
 for database_size in range(a_min*1000000, a_max*1000000+1000000, 1000000):
     print(database_size/1000000)
@@ -291,8 +292,8 @@ for database_size in range(a_min*1000000, a_max*1000000+1000000, 1000000):
             while client_status != CLIENT_DONE:
                 ms_count += 1
                 update_track_status()
-            if ms_count < 5000:
-                results.append(ms_count)
+            # if ms_count < 5000:
+            results.append(ms_count)
 
         average = sum(results)/len(results)
         # print("AVERAGE: ", average, "ms", sep='')
