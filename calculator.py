@@ -2,6 +2,7 @@ import numpy as np
 import math
 import os
 import time
+from random import sample
 
 
 TRACK_NOT_CONNECTED = "NOT_CONNECTED                "
@@ -88,12 +89,12 @@ def get_search_time(package_size, amount_of_packages):
 
 # Set Values
 # All times are in milliseconds
-database_size = 10000000000
+database_size = 10000000
 amount_of_nodes = database_size
-amount_of_packages = 50
+amount_of_packages = 10
 package_size = math.floor(database_size/amount_of_packages)
 contact_book_size = 1000
-hash_table_creation_time = 30
+hash_table_creation_time = 10
 time_to_send_requests = amount_of_packages
 
 
@@ -101,11 +102,9 @@ search_times = get_search_time(package_size, amount_of_packages)
 
 print("Amount of nodes to collect from:", amount_of_packages)
 print("Average package size:", package_size)
-print(search_times)
-time.sleep(20)
 
 # https://www.speedtest.net/global-index
-latency_mean = 30
+latency_mean = 37
 latency_spread = 10
 
 # Upload and download averages based on
@@ -124,6 +123,9 @@ connection_protocol_multiplier = 3
 # Normal distribution of latencies
 latencies = np.random.normal(latency_mean, latency_spread, amount_of_packages)
 
+# Normal distribution of latencies on the path when searching for nodes
+path_latencies = np.random.normal(latency_mean, latency_spread, 100000)
+
 
 # Normal distribution of download speed
 download_speed = np.random.normal(
@@ -138,13 +140,18 @@ upload_speed = np.random.normal(
 path_lengths = np.random.normal(np.log2(
     database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
 
+for i in range(len(path_lengths)):
+    if path_lengths[i] < 2:
+        path_lengths[i] = 2
 
+print(path_lengths)
 tracks = []
 for track_id in range(amount_of_packages):
     # Takes path length and multiplies with the time it takes to connect to the next node with a TCP protocol.
     # Sending request after a connection been made is neglectable
-    find_node_time = path_lengths[track_id] * \
-        latency_mean * connection_protocol_multiplier
+
+    find_node_time = sum(sample(
+        path_latencies.tolist(), math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
 
     search_contacts_time = search_times[track_id]
 
@@ -269,12 +276,12 @@ while client_status != CLIENT_DONE:
     update_track_status()
 
     # Terminal aesthetic (works for max 80 tracks):
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print("TIME: ", ms_count, "ms", sep='')
-    print("CLIENT         STATUS: ", client_status, "\n", sep='')
-    for track in tracks:
-        print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
-              "              TIME LEFT: ", track.time_left, "ms", sep='')
-    time.sleep(0.1)
+    # os.system('cls' if os.name == 'nt' else 'clear')
+    # print("TIME: ", ms_count, "ms", sep='')
+    # print("CLIENT         STATUS: ", client_status, "\n", sep='')
+    # for track in tracks:
+    #    print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
+    #          "              TIME LEFT: ", track.time_left, "ms", sep='')
+    # time.sleep(0.1)
 
 print("TIME: ", ms_count, "ms", sep='')
