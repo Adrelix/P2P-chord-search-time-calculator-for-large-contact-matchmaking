@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from matplotlib import cbook
 from matplotlib import cm
 from matplotlib.colors import LightSource
+import time
+import os
 
 TRACK_NOT_CONNECTED = "NOT_CONNECTED                "
 TRACK_SEARCHING_FOR_NODE = "SEARCHING_FOR_NODE           "
@@ -102,7 +104,7 @@ p_max = 50
 p_inc_size = 5
 
 # amount of iteration for each combination
-i_tot = 100
+i_tot = 10
 
 
 for database_size in range(a_min*1000000, a_max*1000000+1000000, 1000000):
@@ -132,8 +134,6 @@ for database_size in range(a_min*1000000, a_max*1000000+1000000, 1000000):
             # https://www.speedtest.net/global-index
             upload_speed_mean = 13.06
             upload_speed_spread = 4.64
-            download_speed_mean = 41.5
-            download_speed_spread = 32.68
 
             # Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
             # https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
@@ -147,13 +147,13 @@ for database_size in range(a_min*1000000, a_max*1000000+1000000, 1000000):
             path_latencies = np.random.normal(
                 latency_mean, latency_spread, 100000)
 
-            # Normal distribution of download speed
-            download_speed = np.random.normal(
-                download_speed_mean, download_speed_spread, amount_of_packages)
-
             # Normal distribution of upload speed
             upload_speed = np.random.normal(
                 upload_speed_mean, upload_speed_spread, amount_of_packages)
+
+            for i in range(amount_of_packages):
+                if upload_speed[i] < 0.5:
+                    upload_speed[i] = 0.5
 
             # Normal distribution of path lengths based on
             # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
@@ -193,7 +193,6 @@ for database_size in range(a_min*1000000, a_max*1000000+1000000, 1000000):
                 # The total estimated time each node require (if assumed it never needs to wait for the client)
                 total_time = math.floor(find_node_time + establish_connection_time +
                                         node_to_client_upload_time + search_contacts_time + client_to_node_upload_time)
-
                 track_status = "NOT_CONNECTED"
                 new_track = track(track_id, total_time, track_status, find_node_time, establish_connection_time,
                                   search_contacts_time, client_to_node_upload_time, node_to_client_upload_time)
@@ -292,7 +291,7 @@ for database_size in range(a_min*1000000, a_max*1000000+1000000, 1000000):
             while client_status != CLIENT_DONE:
                 ms_count += 1
                 update_track_status()
-            # if ms_count < 5000:
+
             results.append(ms_count)
 
         average = sum(results)/len(results)
@@ -324,6 +323,3 @@ surf = ax.plot_surface(x, y, z, rstride=1, cstride=1,
 
 plt.show()
 plt.savefig('plot.png')
-
-
-# plt.show()
