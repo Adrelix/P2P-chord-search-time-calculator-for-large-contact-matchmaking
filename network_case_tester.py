@@ -7,33 +7,8 @@ from matplotlib import cm
 from matplotlib.colors import LightSource
 
 
-# amount of users in millions
-a_min = 1
-a_max = 20
-a_inc_size = 2
-
-# amount of packages
-p_min = 1
-p_max = 100
-p_inc_size = 3
-
 # amount of iteration for each combination
-i_tot = 10
-
-# range presentated in graph (to avoid extremely high/low times ruining graph)
-graph_cap = 6000
-graph_min = 1000
-
-# https://www.speedtest.net/global-index
-latency_mean = 37
-latency_spread = 10
-latency_minimum = 5
-
-# Upload and download averages based on
-# https://www.speedtest.net/global-index
-upload_speed_mean = 13.06
-upload_speed_spread = 5
-upload_speed_minimum = 0.1
+i_tot = 3
 
 # Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
 # https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
@@ -60,10 +35,6 @@ x = []
 y = []
 z = []
 
-best_times = []
-bestX = []
-bestY = []
-bestZ = []
 
 class track:
     def __init__(self, track_id, total_time, track_status, find_node_time, establish_connection_time, search_contacts_time, client_to_node_upload_time, node_to_client_upload_time):
@@ -77,38 +48,63 @@ class track:
         self.client_to_node_upload_time = client_to_node_upload_time
         self.node_to_client_upload_time = node_to_client_upload_time
 
-class best_line:
-    def __init__(self, amount_of_packages, amount_of_users, time):
-        self.amount_of_packages = amount_of_packages
+class network_case:
+    def __init__(self, latency_mean, latency_spread, upload_mean, upload_spread):
+        self.latency_mean = latency_mean
+        self.latency_spread = latency_spread
+        self.upload_mean = upload_mean
+        self.upload_spread = upload_spread
+        self.result_y = []
+        self.result_x = []
+class database_premis:
+    def __init__(self, amount_of_users, optimal_package_distribution):
         self.amount_of_users = amount_of_users
-        self.time = time
+        self.optimal_package_distribution = optimal_package_distribution
+        
+
+#Creating different network cases based on, in said order:
+# Average latency, 
+network_cases = []
+network_cases.append(network_case(latency_mean=10, latency_spread=3, upload_mean=50, upload_spread=10))
+network_cases.append(network_case(latency_mean=20, latency_spread=5, upload_mean=50, upload_spread=10))
+network_cases.append(network_case(latency_mean=37, latency_spread=15, upload_mean=13.06, upload_spread=4.64))
+network_cases.append(network_case(latency_mean=60, latency_spread=20, upload_mean=8, upload_spread=2))
+network_cases.append(network_case(latency_mean=90, latency_spread=30, upload_mean=5, upload_spread=1))
+network_cases.append(network_case(latency_mean=150, latency_spread=30, upload_mean=2, upload_spread=0.5))
+
+premises = []
+premises.append(database_premis(1000000, 4))
+premises.append(database_premis(10000000, 36))
+premises.append(database_premis(50000000, 64))
+premises.append(database_premis(100000000, 90))
+premises.append(database_premis(500000000, 120))
+premises.append(database_premis(1000000000, 250))
 
 
+for premis in premises:
+    database_size = premis.amount_of_users
+    amount_of_packages = premis.optimal_package_distribution 
 
-
-for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_inc_size*1000000):
-    best_distribution = 0
-    best_distribution_time = math.inf
-    best_package_size = 0
-
-    for amount_of_packages in range(p_min, p_max+p_inc_size, p_inc_size):
+    for case in network_cases:
+        latency_mean = case.latency_mean
+        latency_spread = case.latency_spread
+        latency_minimum = 1
+        upload_speed_mean = case.upload_mean
+        upload_speed_spread = case.upload_spread
+        upload_speed_minimum = 0.1
         # Set Values
         # All times are in milliseconds
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
-        #http://web.mit.edu/bentley/www/papers/phonebook-CHI15.pdf
-        contact_book_size = 308
+        contact_book_size = 1000
         hash_table_creation_time = 10
         time_to_send_requests = amount_of_packages
-        # print("Amount of nodes to collect from:", amount_of_packages)
-        # print("Average package size:", package_size)
 
         results = []
         for i in range(i_tot):
 
             # Time required to search through the uploaded contactbook and compare it to the nodes information
             # Based on our experiment (see xxxx)
-
             search_time_mean = package_size * 0.0009 + 125.666
             search_time_spread = package_size * 0.000009 + 6.1168
             search_times = np.random.normal(
@@ -177,15 +173,6 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
                                   search_contacts_time, client_to_node_upload_time, node_to_client_upload_time)
                 tracks.append(new_track)
 
-            break_flag = False
-            for track_inst in tracks:
-                if track_inst.total_time > 10000:
-                    break_flag=True
-                    results.append(track_inst.total_time)
-                    break
-
-            if break_flag:
-                break
             ms_count = 0
             client_status = "STARTING_UP"
 
@@ -283,88 +270,42 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
             results.append(ms_count)
 
         average = sum(results)/len(results)
-        if average < best_distribution_time:
-            best_distribution = amount_of_packages
-            best_distribution_time = average
-            best_package_size = package_size
 
-        if average > graph_cap:
-            average = graph_cap
-        y.append(amount_of_packages)
-        x.append(database_size/1000000)
-        z.append(average)
+        case.result_x.append(database_size/1000000)
+        case.result_y.append(average)
 
-    bestX.append(best_distribution)
-    bestY.append(database_size/1000000)
-    bestZ.append(best_distribution_time)
-    best_times.append(best_line(amount_of_users=database_size/1000000, amount_of_packages=best_distribution, time=best_distribution_time))
-    print("Amount of users:", database_size /
-          1000000, " Best split:", best_distribution, " Package size:", best_package_size, " Time:", best_distribution_time)
+        print("Amount of users:", database_size /
+          1000000, " Latency:", case.latency_mean, "ms  Upload_mean:", case.upload_mean, "Mbps  Time:", average)
+        
 
+    
 
+tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),    
+             (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),    
+             (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),    
+             (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),    
+             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]    
 
-X = np.reshape(x, (len(np.unique(x)), len(np.unique(y))))
-Y = np.reshape(y, (len(np.unique(x)), len(np.unique(y))))
-Z = np.reshape(z, (len(np.unique(x)), len(np.unique(y))))
+for i in range(len(tableau20)):    
+    r, g, b = tableau20[i]    
+    tableau20[i] = (r / 255., g / 255., b / 255.)    
+
+labels = [1000000, ]
 
 fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
 
-ax.set_ylabel('Amount of packages')
-ax.set_xlabel('Amount of users (in millions)')
-ax.set_zlabel('Time (in ms)')
+plt.ylabel('Time (in ms)')
+plt.xlabel('Amount of users (in millions)')
 
-ls = LightSource(270, 45)
-# To use a custom hillshading mode, override the built-in shading and pass
-# in the rgb colors of the shaded surface calculated from "shade".
-rgb = ls.shade(Z, cmap=cm.gist_earth, norm=matplotlib.colors.Normalize(vmin=graph_min, vmax=graph_cap+graph_cap*0.05), vert_exag=0.1, blend_mode='soft')
-surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
-                       facecolors=rgb, linewidth=0, antialiased=True, shade=False)
+plt.plot(network_cases[0].result_x, network_cases[0].result_y, color = tableau20[0], marker = 'o', label = 'Network case 1')
+plt.plot(network_cases[1].result_x, network_cases[1].result_y, color = tableau20[2], marker = 'o', label = 'Network case 2')
+plt.plot(network_cases[2].result_x, network_cases[2].result_y, color = tableau20[4], marker = 'o', label = 'Network case 3')
+plt.plot(network_cases[3].result_x, network_cases[3].result_y, color = tableau20[6], marker = 'o', label = 'Network case 4')
+plt.plot(network_cases[4].result_x, network_cases[4].result_y, color = tableau20[8], marker = 'o', label = 'Network case 5')
+plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20[10], marker = 'o', label = 'Network case 6')
 
-plt.title('Effect of package size distribution')
+
+plt.title('Performance with variance in network quality')
+plt.legend()
 plt.show()
 plt.savefig('plot.png')
-
-
-X = np.reshape(x, (len(np.unique(x)), len(np.unique(y))))
-Y = np.reshape(y, (len(np.unique(x)), len(np.unique(y))))
-Z = np.reshape(z, (len(np.unique(x)), len(np.unique(y))))
-
-
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-
-
-for i in range(len(best_times)-1):
-    ax.plot([best_times[i].amount_of_packages, best_times[i+1].amount_of_packages], [best_times[i].amount_of_users, best_times[i+1].amount_of_users], zs=[best_times[i].time, best_times[i+1].time], color='r')
-
-
-ax.scatter(bestX, bestY, bestZ, color='r')
-
-ax.set_xlabel('Amount of packages')
-ax.set_ylabel('Amount of users (in millions)')
-ax.set_zlabel('Time (in ms)')
-
-ls = LightSource(270, 45)
-# To use a custom hillshading mode, override the built-in shading and pass
-# in the rgb colors of the shaded surface calculated from "shade".
-rgb = ls.shade(Z, cmap=cm.gist_earth, norm=matplotlib.colors.Normalize(vmin=graph_min, vmax=graph_cap+graph_cap*0.05), vert_exag=0.1, blend_mode='soft')
-surf = ax.plot_surface(Y, X, Z, rstride=1, alpha=0.6, cstride=1,
-                       facecolors=rgb, linewidth=0, antialiased=True, shade=False)
-
-plt.title('Optimal distributions')
-plt.show()
-plt.savefig('plot2.png')
-
-
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.set_xlabel('Amount of packages')
-ax.set_ylabel('Amount of users (in millions)')
-ax.set_zlabel('Time (in ms)')
-rgb = ls.shade(Z, cmap=cm.gist_earth, norm=matplotlib.colors.Normalize(vmin=graph_min, vmax=graph_cap+graph_cap*0.05), vert_exag=0.1, blend_mode='soft')
-surf = ax.plot_surface(Y, X, Z, rstride=1, alpha=1, cstride=1,
-                       facecolors=rgb, linewidth=0, antialiased=True, shade=False)
-plt.title('Effect of package size distribution')
-plt.show()
-plt.savefig('plot3.png')
