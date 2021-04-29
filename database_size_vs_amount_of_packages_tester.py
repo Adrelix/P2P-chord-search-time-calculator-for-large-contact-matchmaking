@@ -5,20 +5,20 @@ from random import sample
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import LightSource
-
+from dbfread import DBF
 
 # amount of users in millions
 a_min = 1
-a_max = 20
+a_max = 10
 a_inc_size = 2
 
 # amount of packages
 p_min = 1
-p_max = 100
+p_max = 20
 p_inc_size = 3
 
 # amount of iteration for each combination
-i_tot = 10
+i_tot = 2
 
 # range presentated in graph (to avoid extremely high/low times ruining graph)
 graph_cap = 6000
@@ -85,6 +85,20 @@ class best_line:
 
 
 
+# Read in data from Ookla-open-data database to create statistics regarding latencies, upload speeds and download speeds
+# Data is from Q1 2020, and is based on the average of 604m*604m areas with 'devices' amount of devices.
+# We sort out latencies and upload speeds that are extremely high (for latencies) and low (for upload speeds) as these should in practise be counted as dead nodes.
+upload_speeds = []
+download_speeds = []
+latencies = []
+for record in DBF('gps_mobile_tiles.dbf'):
+    for i in range(record['devices']):
+        if record['avg_u_kbps'] > 100: #if above 0.1 mbps
+            upload_speeds.append(record['avg_u_kbps']/ 1000)
+        if record['avg_lat_ms'] < 500: #if below 500ms
+            latencies.append(record['avg_lat_ms'])
+
+
 
 for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_inc_size*1000000):
     best_distribution = 0
@@ -92,78 +106,67 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
     best_package_size = 0
 
     for amount_of_packages in range(p_min, p_max+p_inc_size, p_inc_size):
-        # Set Values
-        # All times are in milliseconds
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
-        #http://web.mit.edu/bentley/www/papers/phonebook-CHI15.pdf
+        #contact book size is based on the average amount of contacts a person has on their phone
+        # according to http://web.mit.edu/bentley/www/papers/phonebook-CHI15.pdf
         contact_book_size = 308
         hash_table_creation_time = 10
         time_to_send_requests = amount_of_packages
         # print("Amount of nodes to collect from:", amount_of_packages)
         # print("Average package size:", package_size)
+ 
+ 
+        # Time required to search through the uploaded contactbook and compare it to the nodes information
+        # Based on our experiment (see xxxx)
+        search_time_mean = package_size * 0.0009 + 125.666
+        search_time_spread = package_size * 0.000009 + 6.1168
+        search_times = np.random.normal(
+            search_time_mean, search_time_spread, amount_of_packages)
+
+
+        # Normal distribution of path lengths based on
+        # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
+        path_lengths = np.random.normal(np.log2(
+            database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
+        
+        print(path_lengths)
+        for i in range(len(path_lengths)):
+            if path_lengths[i] < 2:
+                path_lengths[i] = 2
+
 
         results = []
         for i in range(i_tot):
 
-            # Time required to search through the uploaded contactbook and compare it to the nodes information
-            # Based on our experiment (see xxxx)
-
-            search_time_mean = package_size * 0.0009 + 125.666
-            search_time_spread = package_size * 0.000009 + 6.1168
-            search_times = np.random.normal(
-                search_time_mean, search_time_spread, amount_of_packages)
-
-            # Normal distribution of latencies
-            latencies = np.random.normal(
-                latency_mean, latency_spread, amount_of_packages)
-
-            for i in range(amount_of_packages):
-                if latencies[i] < latency_minimum:
-                    latencies[i] = latency_minimum
-
-            # Normal distribution of latencies on the path when searching for nodes
-            path_latencies = np.random.normal(
-                latency_mean, latency_spread, 100000)
-
-            # Normal distribution of upload speed
-            upload_speed = np.random.normal(
-                upload_speed_mean, upload_speed_spread, amount_of_packages)
-
-            for i in range(amount_of_packages):
-                if upload_speed[i] < upload_speed_minimum:
-                    upload_speed[i] = upload_speed_minimum
-
-            # Normal distribution of path lengths based on
-            # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
-            path_lengths = np.random.normal(np.log2(
-                database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
-
-            for i in range(len(path_lengths)):
-                if path_lengths[i] < 2:
-                    path_lengths[i] = 2
+           
+           
 
             tracks = []
             for track_id in range(amount_of_packages):
                 # Takes path length and multiplies with the time it takes to connect to the next node with a TCP protocol.
                 # Sending request after a connection been made is neglectable
+                node_latency = sample(latencies, 1)[0]
+                node_upload_speed = sample(upload_speeds, 1)[0]
+
 
                 find_node_time = sum(sample(
-                    path_latencies.tolist(), math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
+                    latencies, math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
 
                 search_contacts_time = search_times[track_id]
 
                 # Time required to establish a TCP connection to the final node
-                establish_connection_time = latencies[track_id] * \
+                establish_connection_time = node_latency * \
                     connection_protocol_multiplier
 
                 # Calculate the maximum TCP throughput with standard window size 65536 Bytes = 524288 bits
-                max_TCP_throughput = 0.524288 / (latencies[track_id] / 1000)
+                max_TCP_throughput = 0.524288 / (node_latency / 1000)
 
-                # Upload speed is capped by max_TCP_thprughput if it's higher than upload_speed[track_id]
-                node_upload_speed = upload_speed[track_id] if upload_speed[
-                    track_id] < max_TCP_throughput else max_TCP_throughput
+                # Upload speed is capped by max_TCP_thprughput if it's higher than node_upload_speed
+                if node_upload_speed < max_TCP_throughput:
+                    node_upload_speed = max_TCP_throughput
 
+                #Calculating upload time
                 node_to_client_upload_time = (
                     1000 * (contact_book_size * 256) / amount_of_packages) / (node_upload_speed * 1000000)
                 client_to_node_upload_time = (
