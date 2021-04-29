@@ -24,16 +24,11 @@ i_tot = 2
 graph_cap = 6000
 graph_min = 1000
 
-# https://www.speedtest.net/global-index
-latency_mean = 37
-latency_spread = 10
+# Boundaries
 latency_minimum = 5
-
-# Upload and download averages based on
-# https://www.speedtest.net/global-index
-upload_speed_mean = 13.06
-upload_speed_spread = 5
+latency_maximum = 500
 upload_speed_minimum = 0.1
+download_speed_minimum = 0.1
 
 # Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
 # https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
@@ -93,9 +88,11 @@ download_speeds = []
 latencies = []
 for record in DBF('gps_mobile_tiles.dbf'):
     for i in range(record['devices']):
-        if record['avg_u_kbps'] > 100: #if above 0.1 mbps
+        if record['avg_u_kbps'] > upload_speed_minimum: #if above 0.1 mbps
             upload_speeds.append(record['avg_u_kbps']/ 1000)
-        if record['avg_lat_ms'] < 500: #if below 500ms
+        if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
+            upload_speeds.append(record['avg_d_kbps']/ 1000)
+        if record['avg_lat_ms'] < latency_maximum: #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
 
@@ -108,14 +105,15 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
     for amount_of_packages in range(p_min, p_max+p_inc_size, p_inc_size):
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
+        time_to_send_requests = amount_of_packages
+
+        #Based on our experiment (see xxx)
+        hash_table_creation_time = 10
+        
         #contact book size is based on the average amount of contacts a person has on their phone
         # according to http://web.mit.edu/bentley/www/papers/phonebook-CHI15.pdf
         contact_book_size = 308
-        hash_table_creation_time = 10
-        time_to_send_requests = amount_of_packages
-        # print("Amount of nodes to collect from:", amount_of_packages)
-        # print("Average package size:", package_size)
- 
+
  
         # Time required to search through the uploaded contactbook and compare it to the nodes information
         # Based on our experiment (see xxxx)
@@ -125,12 +123,12 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
             search_time_mean, search_time_spread, amount_of_packages)
 
 
-        # Normal distribution of path lengths based on
+        # Distribution of path lengths based on
         # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
         path_lengths = np.random.normal(np.log2(
             database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
         
-        print(path_lengths)
+        
         for i in range(len(path_lengths)):
             if path_lengths[i] < 2:
                 path_lengths[i] = 2
@@ -180,15 +178,6 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
                                   search_contacts_time, client_to_node_upload_time, node_to_client_upload_time)
                 tracks.append(new_track)
 
-            break_flag = False
-            for track_inst in tracks:
-                if track_inst.total_time > 10000:
-                    break_flag=True
-                    results.append(track_inst.total_time)
-                    break
-
-            if break_flag:
-                break
             ms_count = 0
             client_status = "STARTING_UP"
 
@@ -232,7 +221,6 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
                         track.time_left -= 1
                         if track.time_left < track.total_time - track.find_node_time - track.establish_connection_time - track.client_to_node_upload_time - track.search_contacts_time - track.node_to_client_upload_time:
                             track.track_status = TRACK_DONE
-                            client_status = CLIENT_WAITING_FOR_TRANSFER
 
                     if track.track_status == TRACK_COMPARING_LIST:
                         track.time_left -= 1
@@ -266,10 +254,7 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
 
                     for track in tracks:
                         if track.track_status == TRACK_WAITING_FOR_TRANSFER_DOWN:
-                            if client_status == CLIENT_WAITING_FOR_TRANSFER:
-                                client_status = (
-                                    "TRANSFERING DOWN BETWEEN CLIENT AND TRACK #" + str(track.track_id))
-                                track.track_status = TRACK_TRANSFERING_DOWN
+                            track.track_status = TRACK_TRANSFERING_DOWN
 
                     all_tracks_done = True
                     for track in tracks:

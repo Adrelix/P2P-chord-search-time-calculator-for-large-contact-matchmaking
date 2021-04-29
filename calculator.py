@@ -171,6 +171,7 @@ for track_id in range(amount_of_packages):
     client_to_node_upload_time = (
         1000 * (contact_book_size * 256)) / (node_upload_speed * 1000000)
 
+
     # The total estimated time each node require (if assumed it never needs to wait for the client)
     total_time = math.floor(find_node_time + establish_connection_time +
                             node_to_client_upload_time + search_contacts_time + client_to_node_upload_time)
@@ -224,7 +225,7 @@ def update_track_status():
             track.time_left -= 1
             if track.time_left < track.total_time - track.find_node_time - track.establish_connection_time - track.client_to_node_upload_time - track.search_contacts_time - track.node_to_client_upload_time:
                 track.track_status = TRACK_DONE
-                client_status = CLIENT_WAITING_FOR_TRANSFER
+            #    client_status = CLIENT_WAITING_FOR_TRANSFER
 
         if track.track_status == TRACK_COMPARING_LIST:
             track.time_left -= 1
@@ -258,10 +259,10 @@ def update_track_status():
 
         for track in tracks:
             if track.track_status == TRACK_WAITING_FOR_TRANSFER_DOWN:
-                if client_status == CLIENT_WAITING_FOR_TRANSFER:
-                    client_status = (
-                        "TRANSFERING DOWN BETWEEN CLIENT AND TRACK #" + str(track.track_id))
-                    track.track_status = TRACK_TRANSFERING_DOWN
+                #if client_status == CLIENT_WAITING_FOR_TRANSFER:
+                #    client_status = (
+                #        "TRANSFERING DOWN BETWEEN CLIENT AND TRACK #" + str(track.track_id))
+                track.track_status = TRACK_TRANSFERING_DOWN
 
         all_tracks_done = True
         for track in tracks:
@@ -276,13 +277,13 @@ while client_status != CLIENT_DONE:
     ms_count += 1
     update_track_status()
 
-    # Terminal aesthetic (works for max 80 tracks):
-    # os.system('cls' if os.name == 'nt' else 'clear')
-    # print("TIME: ", ms_count, "ms", sep='')
-    # print("CLIENT         STATUS: ", client_status, "\n", sep='')
-    # for track in tracks:
-    #    print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
-    #          "              TIME LEFT: ", track.time_left, "ms", sep='')
-    # time.sleep(0.1)
+    #Terminal aesthetic (works for max 80 tracks):
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("TIME: ", ms_count, "ms", sep='')
+    print("CLIENT         STATUS: ", client_status, "\n", sep='')
+    for track in tracks:
+       print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
+             "              TIME LEFT: ", track.time_left, "ms", sep='')
+    time.sleep(0.01)
 
 print("TIME: ", ms_count, "ms", sep='')
