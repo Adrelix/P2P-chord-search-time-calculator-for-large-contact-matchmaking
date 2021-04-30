@@ -92,14 +92,6 @@ latencies = []
 latency_minimum = 1
 upload_speed_minimum = 0.1
 
-for record in DBF('gps_mobile_tiles.dbf'):
-    for i in range(record['devices']):
-        if record['avg_u_kbps'] > 100: #if above 0.1 mbps
-            upload_speeds.append(record['avg_u_kbps']/ 1000)
-        if record['avg_d_kbps'] > 100: #if above 0.1 mbps
-            upload_speeds.append(record['avg_d_kbps']/ 1000)
-        if record['avg_lat_ms'] < 500: #if below 500ms
-            latencies.append(record['avg_lat_ms'])
 
 
 for premis in premises:
@@ -127,8 +119,29 @@ for premis in premises:
             search_time_spread = package_size * 0.000009 + 6.1168
             search_times = np.random.normal(
                 search_time_mean, search_time_spread, amount_of_packages)
+                
 
-            # Distribution of path lengths based on
+            # Normal distribution of latencies
+            latencies = np.random.normal(
+                case.latency_mean, case.latency_spread, amount_of_packages)
+
+            for i in range(amount_of_packages):
+                if latencies[i] < latency_minimum:
+                    latencies[i] = latency_minimum
+
+            # Normal distribution of latencies on the path when searching for nodes
+            path_latencies = np.random.normal(
+                case.latency_mean, case.latency_spread, 100000)
+
+            # Normal distribution of upload speed
+            upload_speed = np.random.normal(
+                case.upload_mean, case.upload_spread, amount_of_packages)
+
+            for i in range(amount_of_packages):
+                if upload_speed[i] < upload_speed_minimum:
+                    upload_speed[i] = upload_speed_minimum
+
+            # Normal distribution of path lengths based on
             # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
             path_lengths = np.random.normal(np.log2(
                 database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
@@ -141,27 +154,23 @@ for premis in premises:
             for track_id in range(amount_of_packages):
                 # Takes path length and multiplies with the time it takes to connect to the next node with a TCP protocol.
                 # Sending request after a connection been made is neglectable
-                node_latency = sample(latencies, 1)[0]
-                node_upload_speed = sample(upload_speeds, 1)[0]
-
 
                 find_node_time = sum(sample(
-                    latencies, math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
+                    path_latencies.tolist(), math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
 
                 search_contacts_time = search_times[track_id]
 
                 # Time required to establish a TCP connection to the final node
-                establish_connection_time = node_latency * \
+                establish_connection_time = latencies[track_id] * \
                     connection_protocol_multiplier
 
                 # Calculate the maximum TCP throughput with standard window size 65536 Bytes = 524288 bits
-                max_TCP_throughput = 0.524288 / (node_latency / 1000)
+                max_TCP_throughput = 0.524288 / (latencies[track_id] / 1000)
 
-                # Upload speed is capped by max_TCP_thprughput if it's higher than node_upload_speed
-                if node_upload_speed < max_TCP_throughput:
-                    node_upload_speed = max_TCP_throughput
+                # Upload speed is capped by max_TCP_thprughput if it's higher than upload_speed[track_id]
+                node_upload_speed = upload_speed[track_id] if upload_speed[
+                    track_id] < max_TCP_throughput else max_TCP_throughput
 
-                #Calculating upload time
                 node_to_client_upload_time = (
                     1000 * (contact_book_size * 256) / amount_of_packages) / (node_upload_speed * 1000000)
                 client_to_node_upload_time = (

@@ -3,7 +3,7 @@ import math
 import os
 import time
 from random import sample
-
+from dbfread import DBF
 
 
 TRACK_NOT_CONNECTED = "NOT_CONNECTED                "
@@ -47,96 +47,59 @@ class track:
         self.node_to_client_upload_time = node_to_client_upload_time
 
 
-# Time required to search through the uploaded contactbook and compare it to the nodes information
-# Based on our experiment (see xxxx)
-def get_search_time(package_size, amount_of_packages):
 
-    num_list = [10000, 25000, 50000, 100000,
-                250000, 500000, 1000000, 1500000, 2000000, 5000000]
-    closest_number = min(num_list, key=lambda x: abs(x-package_size))
 
-    if closest_number == 10000:
-        search_time_mean = 38.72
-        search_time_spread = 3.45
-    elif closest_number == 25000:
-        search_time_mean = 27.72
-        search_time_spread = 1.50
-    elif closest_number == 50000:
-        search_time_mean = 30.86
-        search_time_spread = 2.91
-    elif closest_number == 100000:
-        search_time_mean = 36
-        search_time_spread = 3.16
-    elif closest_number == 250000:
-        search_time_mean = 61
-        search_time_spread = 17.67
-    elif closest_number == 500000:
-        search_time_mean = 83.29
-        search_time_spread = 4.61
-    elif closest_number == 1000000:
-        search_time_mean = 141.43
-        search_time_spread = 8.14
-    elif closest_number == 1500000:
-        search_time_mean = 207.57
-        search_time_spread = 17.26
-    elif closest_number == 2000000:
-        search_time_mean = 271.57
-        search_time_spread = 15.79
-    elif closest_number == 5000000:
-        search_time_mean = 810.86
-        search_time_spread = 35.33
-    return np.random.normal(search_time_mean, search_time_spread, amount_of_packages)
-
+# Read in data from Ookla-open-data database to create statistics regarding latencies, upload speeds and download speeds
+# Data is from Q1 2020, and is based on the average of 604m*604m areas with 'devices' amount of devices.
+# We sort out latencies and upload speeds that are extremely high (for latencies) and low (for upload speeds) as these should in practise be counted as dead nodes.
+upload_speeds = []
+download_speeds = []
+latencies = []
+latency_minimum = 1
+upload_speed_minimum = 0.1
+for record in DBF('gps_mobile_tiles.dbf'):
+    for i in range(record['devices']):
+        if record['avg_u_kbps'] > 100: #if above 0.1 mbps
+            upload_speeds.append(record['avg_u_kbps']/ 1000)
+        if record['avg_d_kbps'] > 100: #if above 0.1 mbps
+            upload_speeds.append(record['avg_d_kbps']/ 1000)
+        if record['avg_lat_ms'] < 500: #if below 500ms
+            latencies.append(record['avg_lat_ms'])
 
 # Set Values
 # All times are in milliseconds
 database_size = 10000000
 amount_of_nodes = database_size
-amount_of_packages = 10
+amount_of_packages = 34
 package_size = math.floor(database_size/amount_of_packages)
 contact_book_size = 1000
 hash_table_creation_time = 10
 time_to_send_requests = amount_of_packages
-
-
-search_times = get_search_time(package_size, amount_of_packages)
-
-print("Amount of nodes to collect from:", amount_of_packages)
-print("Average package size:", package_size)
-
-# https://www.speedtest.net/global-index
-latency_mean = 37
-latency_spread = 10
-
-# Upload and download averages based on
-# https://www.speedtest.net/global-index
-upload_speed_mean = 13.06
-upload_speed_spread = 4.64
-download_speed_mean = 41.5
-download_speed_spread = 32.68
-
+amount_of_nodes = database_size
+package_size = math.floor(database_size/amount_of_packages)
+time_to_send_requests = amount_of_packages
 
 # Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
 # https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
 connection_protocol_multiplier = 3
 
 
-# Normal distribution of latencies
-latencies = np.random.normal(latency_mean, latency_spread, amount_of_packages)
+#Based on our experiment (see xxx)
+hash_table_creation_time = 10
 
-# Normal distribution of latencies on the path when searching for nodes
-path_latencies = np.random.normal(latency_mean, latency_spread, 100000)
+#contact book size is based on the average amount of contacts a person has on their phone
+# according to http://web.mit.edu/bentley/www/papers/phonebook-CHI15.pdf
+contact_book_size = 308
 
+results = []
+# Time required to search through the uploaded contactbook and compare it to the nodes information
+# Based on our experiment (see xxxx)
+search_time_mean = package_size * 0.0009 + 125.666
+search_time_spread = package_size * 0.000009 + 6.1168
+search_times = np.random.normal(
+    search_time_mean, search_time_spread, amount_of_packages)
 
-# Normal distribution of download speed
-download_speed = np.random.normal(
-    download_speed_mean, download_speed_spread, amount_of_packages)
-
-# Normal distribution of upload speed
-upload_speed = np.random.normal(
-    upload_speed_mean, upload_speed_spread, amount_of_packages)
-
-# Normal distribution of path lengths based on
+# Distribution of path lengths based on
 # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
 path_lengths = np.random.normal(np.log2(
     database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
@@ -145,40 +108,42 @@ for i in range(len(path_lengths)):
     if path_lengths[i] < 2:
         path_lengths[i] = 2
 
-print(path_lengths)
 tracks = []
 for track_id in range(amount_of_packages):
     # Takes path length and multiplies with the time it takes to connect to the next node with a TCP protocol.
     # Sending request after a connection been made is neglectable
+    node_latency = sample(latencies, 1)[0]
+    node_upload_speed = sample(upload_speeds, 1)[0]
+
 
     find_node_time = sum(sample(
-        path_latencies.tolist(), math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
+        latencies, math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
 
     search_contacts_time = search_times[track_id]
 
     # Time required to establish a TCP connection to the final node
-    establish_connection_time = latencies[track_id] * \
+    establish_connection_time = node_latency * \
         connection_protocol_multiplier
 
     # Calculate the maximum TCP throughput with standard window size 65536 Bytes = 524288 bits
-    max_TCP_throughput = 0.524288 / (latencies[track_id] / 1000)
+    max_TCP_throughput = 0.524288 / (node_latency / 1000)
 
-    # Upload speed is capped by max_TCP_thprughput if it's higher than upload_speed[track_id]
-    node_upload_speed = upload_speed[track_id] if upload_speed[track_id] < max_TCP_throughput else max_TCP_throughput
+    # Upload speed is capped by max_TCP_thprughput if it's higher than node_upload_speed
+    if node_upload_speed < max_TCP_throughput:
+        node_upload_speed = max_TCP_throughput
 
+    #Calculating upload time
     node_to_client_upload_time = (
         1000 * (contact_book_size * 256) / amount_of_packages) / (node_upload_speed * 1000000)
     client_to_node_upload_time = (
         1000 * (contact_book_size * 256)) / (node_upload_speed * 1000000)
 
-
     # The total estimated time each node require (if assumed it never needs to wait for the client)
     total_time = math.floor(find_node_time + establish_connection_time +
                             node_to_client_upload_time + search_contacts_time + client_to_node_upload_time)
-
     track_status = "NOT_CONNECTED"
     new_track = track(track_id, total_time, track_status, find_node_time, establish_connection_time,
-                      search_contacts_time, client_to_node_upload_time, node_to_client_upload_time)
+                        search_contacts_time, client_to_node_upload_time, node_to_client_upload_time)
     tracks.append(new_track)
 
 ms_count = 0
@@ -278,12 +243,12 @@ while client_status != CLIENT_DONE:
     update_track_status()
 
     #Terminal aesthetic (works for max 80 tracks):
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print("TIME: ", ms_count, "ms", sep='')
-    print("CLIENT         STATUS: ", client_status, "\n", sep='')
-    for track in tracks:
-       print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
-             "              TIME LEFT: ", track.time_left, "ms", sep='')
-    time.sleep(0.01)
+    #os.system('cls' if os.name == 'nt' else 'clear')
+    #print("TIME: ", ms_count, "ms", sep='')
+    #print("CLIENT         STATUS: ", client_status, "\n", sep='')
+    #for track in tracks:
+    #   print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
+    #         "              TIME LEFT: ", track.time_left, "ms", sep='')
+    #time.sleep(0.01)
 
 print("TIME: ", ms_count, "ms", sep='')

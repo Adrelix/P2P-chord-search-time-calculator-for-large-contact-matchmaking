@@ -108,10 +108,10 @@ for i in range(0, len(upload_speeds)-(len(upload_speeds)%10), math.floor(len(upl
 
 
 for l_perc_id in range (len(latencies_percentiles)):
-    latencies = latencies_percentiles[l_perc_id]
+    #latencies = latencies_percentiles[l_perc_id]
 
     for u_spd_id in range (len(upload_speed_percentiles)):
-        upload_speeds = latencies_percentiles[u_spd_id]
+        #upload_speeds = upload_speed_percentiles[u_spd_id]
 
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
@@ -146,10 +146,6 @@ for l_perc_id in range (len(latencies_percentiles)):
 
         results = []
         for i in range(i_tot):
-
-           
-           
-
             tracks = []
             for track_id in range(amount_of_packages):
                 # Takes path length and multiplies with the time it takes to connect to the next node with a TCP protocol.
@@ -253,7 +249,7 @@ for l_perc_id in range (len(latencies_percentiles)):
                         if track.time_left < track.total_time - track.find_node_time:
                             track.track_status = TRACK_ESTABLISHING_CONNECTION
 
-                # Connect client to track if both are ready (prioritizes upload to node as it potentionally bottlenecks the system if left waiting)
+                # Connect client to track if both are ready, we are never close to caping download speed so it's free to engage whenever it is ready
                 if client_status == CLIENT_WAITING_FOR_TRANSFER:
                     for track in tracks:
                         if track.track_status == TRACK_WAITING_FOR_TRANSFER_UP:
