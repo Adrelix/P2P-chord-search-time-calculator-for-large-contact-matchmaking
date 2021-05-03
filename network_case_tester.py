@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import LightSource
 from dbfread import DBF
+from statistics import mean
 
 
 
@@ -38,6 +39,7 @@ y = []
 z = []
 
 
+
 class track:
     def __init__(self, track_id, total_time, track_status, find_node_time, establish_connection_time, search_contacts_time, client_to_node_upload_time, node_to_client_upload_time):
         self.total_time = total_time
@@ -51,38 +53,19 @@ class track:
         self.node_to_client_upload_time = node_to_client_upload_time
 
 class network_case:
-    def __init__(self, latency_mean, latency_spread, upload_mean, upload_spread):
-        self.latency_mean = latency_mean
-        self.latency_spread = latency_spread
-        self.upload_mean = upload_mean
-        self.upload_spread = upload_spread
+    def __init__(self, latencies, upload_speeds):
+        self.latencies = latencies
+        self.upload_speeds = upload_speeds
+        self.latencies_mean = round(mean(latencies))
+        self.upload_speed_mean = round(mean(upload_speeds))
         self.result_y = []
         self.result_x = []
+
 class database_premis:
     def __init__(self, amount_of_users, optimal_package_distribution):
         self.amount_of_users = amount_of_users
         self.optimal_package_distribution = optimal_package_distribution
         
-
-#Creating different network cases based on, in said order:
-# Average latency, 
-network_cases = []
-network_cases.append(network_case(latency_mean=10, latency_spread=3, upload_mean=50, upload_spread=10))
-network_cases.append(network_case(latency_mean=20, latency_spread=5, upload_mean=50, upload_spread=10))
-network_cases.append(network_case(latency_mean=37, latency_spread=15, upload_mean=13.06, upload_spread=4.64))
-network_cases.append(network_case(latency_mean=60, latency_spread=20, upload_mean=8, upload_spread=2))
-network_cases.append(network_case(latency_mean=90, latency_spread=30, upload_mean=5, upload_spread=1))
-network_cases.append(network_case(latency_mean=150, latency_spread=30, upload_mean=2, upload_spread=0.5))
-
-premises = []
-premises.append(database_premis(1000000, 4))
-premises.append(database_premis(10000000, 36))
-premises.append(database_premis(50000000, 64))
-premises.append(database_premis(100000000, 90))
-premises.append(database_premis(500000000, 120))
-premises.append(database_premis(1000000000, 250))
-
-
 # Read in data from Ookla-open-data database to create statistics regarding latencies, upload speeds and download speeds
 # Data is from Q1 2020, and is based on the average of 604m*604m areas with 'devices' amount of devices.
 # We sort out latencies and upload speeds that are extremely high (for latencies) and low (for upload speeds) as these should in practise be counted as dead nodes.
@@ -93,22 +76,65 @@ latency_minimum = 1
 upload_speed_minimum = 0.1
 
 
+latency_minimum = 5
+latency_maximum = 500
+upload_speed_minimum = 0.1
+download_speed_minimum = 0.1
+for record in DBF('gps_mobile_tiles.dbf'):
+    for i in range(record['devices']):
+        if record['avg_u_kbps'] > upload_speed_minimum: #if above 0.1 mbps
+            upload_speeds.append(record['avg_u_kbps']/ 1000)
+        if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
+            upload_speeds.append(record['avg_d_kbps']/ 1000)
+        if record['avg_lat_ms'] < latency_maximum and latency_minimum < record['avg_lat_ms'] : #if below 500ms
+            latencies.append(record['avg_lat_ms'])
+
+upload_speeds.sort()
+latencies.sort()
+latencies.reverse()
+
+latencies_percentiles = []
+for i in range(0, len(latencies)-(len(latencies)%6), math.floor(len(latencies)/6)):
+    chunk = latencies[i:i +  math.floor(len(latencies)/6)]
+    latencies_percentiles.append(chunk)
+
+upload_speed_percentiles = []
+for i in range(0, len(upload_speeds)-(len(upload_speeds)%6), math.floor(len(upload_speeds)/6)):
+    chunk = upload_speeds[i:i +  math.floor(len(upload_speeds)/6)]
+    upload_speed_percentiles.append(chunk)
+
+network_cases = []
+for i in range(6):
+    network_cases.append(network_case(latencies_percentiles[i], upload_speed_percentiles[i]))
+
+
+
+premises = []
+premises.append(database_premis(1000000, 4))
+premises.append(database_premis(10000000, 36))
+premises.append(database_premis(50000000, 64))
+premises.append(database_premis(100000000, 90))
+premises.append(database_premis(500000000, 120))
+premises.append(database_premis(1000000000, 250))
+
+
+result_x = []
+result_y = []
 
 for premis in premises:
     database_size = premis.amount_of_users
     amount_of_packages = premis.optimal_package_distribution 
 
     for case in network_cases:
+        latency_minimum = 1
+        upload_speed_minimum = 0.1
+        # Set Values
+        # All times are in milliseconds
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
-        time_to_send_requests = amount_of_packages
-
-        #Based on our experiment (see xxx)
+        contact_book_size = 1000
         hash_table_creation_time = 10
-        
-        #contact book size is based on the average amount of contacts a person has on their phone
-        # according to http://web.mit.edu/bentley/www/papers/phonebook-CHI15.pdf
-        contact_book_size = 308
+        time_to_send_requests = amount_of_packages
 
         results = []
         for i in range(i_tot):
@@ -119,28 +145,11 @@ for premis in premises:
             search_time_spread = package_size * 0.000009 + 6.1168
             search_times = np.random.normal(
                 search_time_mean, search_time_spread, amount_of_packages)
-                
 
             # Normal distribution of latencies
-            latencies = np.random.normal(
-                case.latency_mean, case.latency_spread, amount_of_packages)
-
-            for i in range(amount_of_packages):
-                if latencies[i] < latency_minimum:
-                    latencies[i] = latency_minimum
-
-            # Normal distribution of latencies on the path when searching for nodes
-            path_latencies = np.random.normal(
-                case.latency_mean, case.latency_spread, 100000)
-
+            latencies = case.latencies
             # Normal distribution of upload speed
-            upload_speed = np.random.normal(
-                case.upload_mean, case.upload_spread, amount_of_packages)
-
-            for i in range(amount_of_packages):
-                if upload_speed[i] < upload_speed_minimum:
-                    upload_speed[i] = upload_speed_minimum
-
+            upload_speed = case.latencies
             # Normal distribution of path lengths based on
             # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
             path_lengths = np.random.normal(np.log2(
@@ -156,21 +165,22 @@ for premis in premises:
                 # Sending request after a connection been made is neglectable
 
                 find_node_time = sum(sample(
-                    path_latencies.tolist(), math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
+                    latencies, math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
 
                 search_contacts_time = search_times[track_id]
 
+                node_latency = sample(latencies, 1)[0]
+                node_upload_speed = sample(upload_speed, 1)[0]
                 # Time required to establish a TCP connection to the final node
-                establish_connection_time = latencies[track_id] * \
+                establish_connection_time = node_latency * \
                     connection_protocol_multiplier
 
                 # Calculate the maximum TCP throughput with standard window size 65536 Bytes = 524288 bits
-                max_TCP_throughput = 0.524288 / (latencies[track_id] / 1000)
+                max_TCP_throughput = 0.524288 / (node_latency / 1000)
 
                 # Upload speed is capped by max_TCP_thprughput if it's higher than upload_speed[track_id]
-                node_upload_speed = upload_speed[track_id] if upload_speed[
-                    track_id] < max_TCP_throughput else max_TCP_throughput
-
+                if node_upload_speed < max_TCP_throughput:
+                    node_upload_speed = max_TCP_throughput
                 node_to_client_upload_time = (
                     1000 * (contact_book_size * 256) / amount_of_packages) / (node_upload_speed * 1000000)
                 client_to_node_upload_time = (
@@ -227,7 +237,6 @@ for premis in premises:
                         track.time_left -= 1
                         if track.time_left < track.total_time - track.find_node_time - track.establish_connection_time - track.client_to_node_upload_time - track.search_contacts_time - track.node_to_client_upload_time:
                             track.track_status = TRACK_DONE
-                            client_status = CLIENT_WAITING_FOR_TRANSFER
 
                     if track.track_status == TRACK_COMPARING_LIST:
                         track.time_left -= 1
@@ -261,9 +270,6 @@ for premis in premises:
 
                     for track in tracks:
                         if track.track_status == TRACK_WAITING_FOR_TRANSFER_DOWN:
-                            if client_status == CLIENT_WAITING_FOR_TRANSFER:
-                                client_status = (
-                                    "TRANSFERING DOWN BETWEEN CLIENT AND TRACK #" + str(track.track_id))
                                 track.track_status = TRACK_TRANSFERING_DOWN
 
                     all_tracks_done = True
@@ -286,10 +292,10 @@ for premis in premises:
         case.result_y.append(average)
 
         print("Amount of users:", database_size /
-          1000000, " Latency:", case.latency_mean, "ms  Upload_mean:", case.upload_mean, "Mbps  Time:", average)
-        
+          1000000, "Time:", average)
 
-    
+
+
 
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),    
              (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),    
@@ -308,12 +314,18 @@ fig = plt.figure()
 plt.ylabel('Time (in ms)')
 plt.xlabel('Amount of users (in millions)')
 
-plt.plot(network_cases[0].result_x, network_cases[0].result_y, color = tableau20[0], marker = 'o', label = 'Network case 1')
-plt.plot(network_cases[1].result_x, network_cases[1].result_y, color = tableau20[2], marker = 'o', label = 'Network case 2')
-plt.plot(network_cases[2].result_x, network_cases[2].result_y, color = tableau20[4], marker = 'o', label = 'Network case 3')
-plt.plot(network_cases[3].result_x, network_cases[3].result_y, color = tableau20[6], marker = 'o', label = 'Network case 4')
-plt.plot(network_cases[4].result_x, network_cases[4].result_y, color = tableau20[8], marker = 'o', label = 'Network case 5')
-plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20[10], marker = 'o', label = 'Network case 6')
+s = 'U:' +  str(network_cases[0].upload_speed_mean) + ' L:' + str(network_cases[0].latencies_mean)
+plt.plot(network_cases[0].result_x, network_cases[0].result_y, color = tableau20[0], marker = 'o', label = s)
+s = 'U:' +  str(network_cases[1].upload_speed_mean) + ' L:' + str(network_cases[1].latencies_mean)
+plt.plot(network_cases[1].result_x, network_cases[1].result_y, color = tableau20[2], marker = 'o', label = s)
+s = 'U:' +  str(network_cases[2].upload_speed_mean) + ' L:' + str(network_cases[2].latencies_mean)
+plt.plot(network_cases[2].result_x, network_cases[2].result_y, color = tableau20[4], marker = 'o', label = s)
+s = 'U:' +  str(network_cases[3].upload_speed_mean) + ' L:' + str(network_cases[3].latencies_mean)
+plt.plot(network_cases[3].result_x, network_cases[3].result_y, color = tableau20[6], marker = 'o', label = s)
+s = 'U:' +  str(network_cases[4].upload_speed_mean) + ' L:' + str(network_cases[4].latencies_mean)
+plt.plot(network_cases[4].result_x, network_cases[4].result_y, color = tableau20[8], marker = 'o', label = s)
+s = 'U:' +  str(network_cases[5].upload_speed_mean) + ' L:' + str(network_cases[5].latencies_mean)
+plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20[10], marker = 'o', label = s)
 
 
 plt.title('Performance with variance in network quality')

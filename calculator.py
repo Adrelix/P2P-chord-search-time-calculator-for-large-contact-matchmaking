@@ -56,6 +56,7 @@ upload_speeds = []
 download_speeds = []
 latencies = []
 latency_minimum = 1
+latency_maximum = 500
 upload_speed_minimum = 0.1
 for record in DBF('gps_mobile_tiles.dbf'):
     for i in range(record['devices']):
@@ -63,7 +64,7 @@ for record in DBF('gps_mobile_tiles.dbf'):
             upload_speeds.append(record['avg_u_kbps']/ 1000)
         if record['avg_d_kbps'] > 100: #if above 0.1 mbps
             upload_speeds.append(record['avg_d_kbps']/ 1000)
-        if record['avg_lat_ms'] < 500: #if below 500ms
+        if record['avg_lat_ms'] < latency_maximum and latency_minimum<record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
 # Set Values

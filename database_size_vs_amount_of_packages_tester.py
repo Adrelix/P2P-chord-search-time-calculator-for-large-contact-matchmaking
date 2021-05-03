@@ -8,17 +8,17 @@ from matplotlib.colors import LightSource
 from dbfread import DBF
 
 # amount of users in millions
-a_min = 1
-a_max = 10
-a_inc_size = 2
+a_min = 5
+a_max = 100
+a_inc_size = 5
 
 # amount of packages
 p_min = 1
-p_max = 20
-p_inc_size = 3
+p_max = 500
+p_inc_size = 5
 
 # amount of iteration for each combination
-i_tot = 2
+i_tot = 300
 
 # range presentated in graph (to avoid extremely high/low times ruining graph)
 graph_cap = 6000
@@ -92,9 +92,14 @@ for record in DBF('gps_mobile_tiles.dbf'):
             upload_speeds.append(record['avg_u_kbps']/ 1000)
         if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
             upload_speeds.append(record['avg_d_kbps']/ 1000)
-        if record['avg_lat_ms'] < latency_maximum: #if below 500ms
+        if record['avg_lat_ms'] < latency_maximum and latency_minimum<record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
+upload_speeds.sort()
+latencies.sort()
+
+upload_speeds = upload_speeds[math.floor(len(upload_speeds)/10): 9*math.floor(len(upload_speeds)/10)]
+latencies = latencies[math.floor(len(latencies)/10): 9*math.floor(len(latencies)/10)]
 
 
 for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_inc_size*1000000):
