@@ -13,12 +13,12 @@ a_max = 100
 a_inc_size = 5
 
 # amount of packages
-p_min = 1
-p_max = 500
-p_inc_size = 5
+p_min = 10
+p_max = 1000
+p_inc_size = 10
 
 # amount of iteration for each combination
-i_tot = 300
+i_tot = 30
 
 # range presentated in graph (to avoid extremely high/low times ruining graph)
 graph_cap = 6000
@@ -95,11 +95,7 @@ for record in DBF('gps_mobile_tiles.dbf'):
         if record['avg_lat_ms'] < latency_maximum and latency_minimum<record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
-upload_speeds.sort()
-latencies.sort()
 
-upload_speeds = upload_speeds[math.floor(len(upload_speeds)/10): 9*math.floor(len(upload_speeds)/10)]
-latencies = latencies[math.floor(len(latencies)/10): 9*math.floor(len(latencies)/10)]
 
 
 for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_inc_size*1000000):

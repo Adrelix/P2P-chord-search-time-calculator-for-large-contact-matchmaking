@@ -149,7 +149,7 @@ for premis in premises:
             # Normal distribution of latencies
             latencies = case.latencies
             # Normal distribution of upload speed
-            upload_speed = case.latencies
+            upload_speed = case.upload_speeds
             # Normal distribution of path lengths based on
             # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
             path_lengths = np.random.normal(np.log2(

@@ -6,18 +6,21 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import LightSource
 from dbfread import DBF
+from statistics import mean
 
-# amount of users in millions
-database_size = 10
+
+
+# amount of users
+database_size = 10000000
 
 # amount of packages
 amount_of_packages = 34
 
 # amount of iteration for each combination
-i_tot = 2
+i_tot = 3
 
 # range presentated in graph (to avoid extremely high/low times ruining graph)
-graph_cap = 3000
+graph_cap = 8000
 graph_min = 0
 
 # Boundaries
@@ -25,6 +28,11 @@ latency_minimum = 5
 latency_maximum = 500
 upload_speed_minimum = 0.1
 download_speed_minimum = 0.1
+
+# Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
+# https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
+connection_protocol_multiplier = 3
+
 
 # Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
 # https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
@@ -46,12 +54,12 @@ CLIENT_SENDING_REQUESTS_TO_P2P_NETWORK = "SENDING_REQUESTS_TO_P2P_NETWORK  "
 CLIENT_WAITING_FOR_TRANSFER = "WAITING_FOR_TRANSFER             "
 CLIENT_DONE = "DONE                             "
 
-
 x = []
 y = []
 z = []
 
 best_times = []
+
 bestX = []
 bestY = []
 bestZ = []
@@ -88,12 +96,13 @@ for record in DBF('gps_mobile_tiles.dbf'):
             upload_speeds.append(record['avg_u_kbps']/ 1000)
         if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
             upload_speeds.append(record['avg_d_kbps']/ 1000)
-        if record['avg_lat_ms'] < latency_maximum: #if below 500ms
+        if record['avg_lat_ms'] < latency_maximum and latency_minimum < record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
 
 upload_speeds.sort()
 latencies.sort()
+upload_speeds.reverse()
 
 latencies_percentiles = []
 for i in range(0, len(latencies)-(len(latencies)%10), math.floor(len(latencies)/10)):
@@ -108,57 +117,51 @@ for i in range(0, len(upload_speeds)-(len(upload_speeds)%10), math.floor(len(upl
 
 
 for l_perc_id in range (len(latencies_percentiles)):
-    #latencies = latencies_percentiles[l_perc_id]
+    latencies = latencies_percentiles[l_perc_id]
 
     for u_spd_id in range (len(upload_speed_percentiles)):
-        #upload_speeds = upload_speed_percentiles[u_spd_id]
+        upload_speeds = upload_speed_percentiles[u_spd_id]
 
+        print('L:' + str(mean(latencies)) + '     U:' + str(mean(upload_speeds)))
+
+        # All times are in milliseconds
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
-        time_to_send_requests = amount_of_packages
-
-        #Based on our experiment (see xxx)
-        hash_table_creation_time = 10
-        
-        #contact book size is based on the average amount of contacts a person has on their phone
-        # according to http://web.mit.edu/bentley/www/papers/phonebook-CHI15.pdf
         contact_book_size = 308
-
- 
-        # Time required to search through the uploaded contactbook and compare it to the nodes information
-        # Based on our experiment (see xxxx)
-        search_time_mean = package_size * 0.0009 + 125.666
-        search_time_spread = package_size * 0.000009 + 6.1168
-        search_times = np.random.normal(
-            search_time_mean, search_time_spread, amount_of_packages)
-
-
-        # Distribution of path lengths based on
-        # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
-        path_lengths = np.random.normal(np.log2(
-            database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
-        
-        
-        for i in range(len(path_lengths)):
-            if path_lengths[i] < 2:
-                path_lengths[i] = 2
-
+        hash_table_creation_time = 10
+        time_to_send_requests = amount_of_packages
 
         results = []
         for i in range(i_tot):
+
+            # Time required to search through the uploaded contactbook and compare it to the nodes information
+            # Based on our experiment (see xxxx)
+            search_time_mean = package_size * 0.0009 + 125.666
+            search_time_spread = package_size * 0.000009 + 6.1168
+            search_times = np.random.normal(
+                search_time_mean, search_time_spread, amount_of_packages)
+
+            # Normal distribution of path lengths based on
+            # https://cs.nyu.edu/courses/fall18/CSCI-GA.3033-002/papers/chord-ton.pdf
+            path_lengths = np.random.normal(np.log2(
+                database_size) / 2, np.log2(database_size) / 6, math.floor(amount_of_packages))
+
+            for i in range(len(path_lengths)):
+                if path_lengths[i] < 2:
+                    path_lengths[i] = 2
+
             tracks = []
             for track_id in range(amount_of_packages):
                 # Takes path length and multiplies with the time it takes to connect to the next node with a TCP protocol.
                 # Sending request after a connection been made is neglectable
-                node_latency = sample(latencies, 1)[0]
-                node_upload_speed = sample(upload_speeds, 1)[0]
-
 
                 find_node_time = sum(sample(
                     latencies, math.floor(path_lengths[track_id]))) * connection_protocol_multiplier
 
                 search_contacts_time = search_times[track_id]
 
+                node_latency = sample(latencies, 1)[0]
+                node_upload_speed = sample(upload_speeds, 1)[0]
                 # Time required to establish a TCP connection to the final node
                 establish_connection_time = node_latency * \
                     connection_protocol_multiplier
@@ -166,11 +169,9 @@ for l_perc_id in range (len(latencies_percentiles)):
                 # Calculate the maximum TCP throughput with standard window size 65536 Bytes = 524288 bits
                 max_TCP_throughput = 0.524288 / (node_latency / 1000)
 
-                # Upload speed is capped by max_TCP_thprughput if it's higher than node_upload_speed
+                # Upload speed is capped by max_TCP_thprughput if it's higher than upload_speed[track_id]
                 if node_upload_speed < max_TCP_throughput:
                     node_upload_speed = max_TCP_throughput
-
-                #Calculating upload time
                 node_to_client_upload_time = (
                     1000 * (contact_book_size * 256) / amount_of_packages) / (node_upload_speed * 1000000)
                 client_to_node_upload_time = (
@@ -249,7 +250,7 @@ for l_perc_id in range (len(latencies_percentiles)):
                         if track.time_left < track.total_time - track.find_node_time:
                             track.track_status = TRACK_ESTABLISHING_CONNECTION
 
-                # Connect client to track if both are ready, we are never close to caping download speed so it's free to engage whenever it is ready
+                # Connect client to track if both are ready (prioritizes upload to node as it potentionally bottlenecks the system if left waiting)
                 if client_status == CLIENT_WAITING_FOR_TRANSFER:
                     for track in tracks:
                         if track.track_status == TRACK_WAITING_FOR_TRANSFER_UP:
@@ -260,7 +261,7 @@ for l_perc_id in range (len(latencies_percentiles)):
 
                     for track in tracks:
                         if track.track_status == TRACK_WAITING_FOR_TRANSFER_DOWN:
-                            track.track_status = TRACK_TRANSFERING_DOWN
+                                track.track_status = TRACK_TRANSFERING_DOWN
 
                     all_tracks_done = True
                     for track in tracks:
@@ -278,11 +279,13 @@ for l_perc_id in range (len(latencies_percentiles)):
 
         average = sum(results)/len(results)
 
-        if average > graph_cap:
-            average = graph_cap
+        #if average > graph_cap:
+        #    average = graph_cap
         y.append(u_spd_id*10)
         x.append(l_perc_id*10)
         z.append(average)
+        print("Amount of users:", database_size /
+          1000000, "Time:", average)
 
 
 
