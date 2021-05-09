@@ -8,20 +8,20 @@ from matplotlib.colors import LightSource
 from dbfread import DBF
 
 # amount of users in millions
-a_min = 5
-a_max = 100
-a_inc_size = 5
+a_min = 50
+a_max = 1000
+a_inc_size = 50
 
 # amount of packages
-p_min = 10
-p_max = 1000
-p_inc_size = 10
+p_min = 50
+p_max = 2000
+p_inc_size = 50
 
 # amount of iteration for each combination
 i_tot = 30
 
 # range presentated in graph (to avoid extremely high/low times ruining graph)
-graph_cap = 6000
+graph_cap = 10000
 graph_min = 1000
 
 # Boundaries
@@ -102,6 +102,9 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
     best_distribution = 0
     best_distribution_time = math.inf
     best_package_size = 0
+
+    prel_results = []
+    package_list = []
 
     for amount_of_packages in range(p_min, p_max+p_inc_size, p_inc_size):
         amount_of_nodes = database_size
@@ -272,16 +275,34 @@ for database_size in range(a_min*1000000, a_max*1000000+a_inc_size*1000000, a_in
             results.append(ms_count)
 
         average = sum(results)/len(results)
-        if average < best_distribution_time:
-            best_distribution = amount_of_packages
-            best_distribution_time = average
-            best_package_size = package_size
+        prel_results.append(average)
+        package_list.append(amount_of_packages)
+
+        # if average < best_distribution_time:
+        #     best_distribution = amount_of_packages
+        #     best_distribution_time = average
+        #     best_package_size = package_size
 
         if average > graph_cap:
             average = graph_cap
         y.append(amount_of_packages)
         x.append(database_size/1000000)
         z.append(average)
+
+    best_distribution_time = (prel_results[0] + prel_results[1]) / 2 
+    best_distribution = package_list[0]
+    
+    for i in range(1, len(prel_results)-2):
+        if (prel_results[i-1] + prel_results[i] + prel_results[i+1]) / 3 < best_distribution_time:
+            best_distribution_time = (prel_results[i-1] + prel_results[i] + prel_results[i+1]) / 3 
+            best_distribution = package_list[i]
+
+    if (prel_results[len(prel_results)-2] + prel_results[len(prel_results)-1])/ 2 < best_distribution_time:
+        best_distribution_time = (prel_results[i-1] + prel_results[i] + prel_results[i+1]) / 3 
+        best_distribution = package_list[i]
+
+    best_package_size = database_size / best_distribution
+
 
     bestX.append(best_distribution)
     bestY.append(database_size/1000000)
@@ -312,7 +333,7 @@ surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
 
 plt.title('Effect of package size distribution')
 plt.show()
-plt.savefig('plot.png')
+plt.savefig('pplot.png')
 
 
 X = np.reshape(x, (len(np.unique(x)), len(np.unique(y))))
@@ -343,7 +364,7 @@ surf = ax.plot_surface(Y, X, Z, rstride=1, alpha=0.6, cstride=1,
 
 plt.title('Optimal distributions')
 plt.show()
-plt.savefig('plot2.png')
+plt.savefig('pplot2.png')
 
 
 fig = plt.figure()
@@ -356,4 +377,4 @@ surf = ax.plot_surface(Y, X, Z, rstride=1, alpha=1, cstride=1,
                        facecolors=rgb, linewidth=0, antialiased=True, shade=False)
 plt.title('Effect of package size distribution')
 plt.show()
-plt.savefig('plot3.png')
+plt.savefig('pplot3.png')

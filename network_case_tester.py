@@ -110,12 +110,16 @@ for i in range(6):
 
 
 premises = []
-premises.append(database_premis(1000000, 4))
-premises.append(database_premis(10000000, 36))
-premises.append(database_premis(50000000, 64))
-premises.append(database_premis(100000000, 90))
-premises.append(database_premis(500000000, 120))
-premises.append(database_premis(1000000000, 250))
+#5-100m
+#package_splits = [20, 60, 20, 40, 100, 230, 180, 110, 50, 180, 230, 220, 180, 130, 230, 140, 160, 160, 260, 260]
+#for i in range(5000000, 100000000, 5000000):
+#    premises.append(database_premis(i, package_splits.pop(0)))
+
+#100-1000m
+package_splits= [150,250,200,500,650,850,850,600,650,750,550,750,800,800,800,900,650,700,900]
+
+for i in range(100000000, 1000000000, 50000000):
+    premises.append(database_premis(i, package_splits.pop(0)))
 
 
 result_x = []

@@ -1,0 +1,22 @@
+200 it
+
+Amount of users: 5.0  Best split: 20  Package size: 250000.0  Time: 2802.8933333333334
+Amount of users: 10.0  Best split: 40  Package size: 250000.0  Time: 3013.353333333333
+Amount of users: 15.0  Best split: 40  Package size: 375000.0  Time: 3279.4266666666663
+Amount of users: 20.0  Best split: 50  Package size: 400000.0  Time: 3371.126666666667
+Amount of users: 25.0  Best split: 60  Package size: 416666.6666666667  Time: 3314.76
+Amount of users: 30.0  Best split: 100  Package size: 300000.0  Time: 3565.06
+Amount of users: 35.0  Best split: 90  Package size: 388888.8888888889  Time: 3576.08
+Amount of users: 40.0  Best split: 70  Package size: 571428.5714285715  Time: 3705.8266666666664
+Amount of users: 45.0  Best split: 110  Package size: 409090.9090909091  Time: 3775.6133333333332
+Amount of users: 50.0  Best split: 140  Package size: 357142.85714285716  Time: 3804.306666666667
+Amount of users: 55.0  Best split: 100  Package size: 550000.0  Time: 3760.3333333333335
+Amount of users: 60.0  Best split: 280  Package size: 214285.7142857143  Time: 3913.773333333333
+Amount of users: 65.0  Best split: 200  Package size: 325000.0  Time: 3931.2866666666664
+Amount of users: 70.0  Best split: 130  Package size: 538461.5384615385  Time: 3977.58
+Amount of users: 75.0  Best split: 200  Package size: 375000.0  Time: 4053.0266666666666
+Amount of users: 80.0  Best split: 180  Package size: 444444.44444444444  Time: 3967.3866666666668
+Amount of users: 85.0  Best split: 150  Package size: 566666.6666666666  Time: 4102.36
+Amount of users: 90.0  Best split: 300  Package size: 300000.0  Time: 4172.433333333333
+Amount of users: 95.0  Best split: 240  Package size: 395833.3333333333  Time: 4105.866666666666
+Amount of users: 100.0  Best split: 400  Package size: 250000.0  Time: 4186.62
