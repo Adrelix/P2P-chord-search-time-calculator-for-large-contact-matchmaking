@@ -110,16 +110,27 @@ for i in range(6):
 
 
 premises = []
-#5-100m
-#package_splits = [20, 60, 20, 40, 100, 230, 180, 110, 50, 180, 230, 220, 180, 130, 230, 140, 160, 160, 260, 260]
-#for i in range(5000000, 100000000, 5000000):
+
+#5-100m raw
+package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 280, 200, 130, 200, 180, 150, 300, 240, 400]
+for i in range(5000000, 100000000, 5000000):
+    premises.append(database_premis(i, package_splits.pop(0)))
+
+#100-1000m raw
+#package_splits= [150, 350, 300,400,600,550,500,650,750,450,650,550,650,900,700,700,800,900,850,900]
+#for i in range(100000000, 1000000000, 50000000):
 #    premises.append(database_premis(i, package_splits.pop(0)))
 
-#100-1000m
-package_splits= [150,250,200,500,650,850,850,600,650,750,550,750,800,800,800,900,650,700,900]
-
-for i in range(100000000, 1000000000, 50000000):
+#5-100m corrected
+package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 200, 200, 130, 200, 180, 150, 300, 300, 400]
+for i in range(5000000, 100000000, 5000000):
     premises.append(database_premis(i, package_splits.pop(0)))
+
+#100-1000m corrected
+#package_splits= [150, 350, 300,400,600,550,500,650,750,450,650,550,650,900,700,700,800,900,850,900]
+#for i in range(100000000, 1000000000, 50000000):
+#    premises.append(database_premis(i, package_splits.pop(0)))
+
 
 
 result_x = []
@@ -335,4 +346,4 @@ plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20
 plt.title('Performance with variance in network quality')
 plt.legend()
 plt.show()
-plt.savefig('plot.png')
+plt.savefig('network_case_plot.png')
