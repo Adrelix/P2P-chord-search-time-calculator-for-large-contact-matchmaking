@@ -11,7 +11,7 @@ from statistics import mean
 
 
 # amount of iteration for each combination
-i_tot = 1
+i_tot = 3
 
 # Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
 # https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
@@ -85,7 +85,7 @@ for record in DBF('gps_mobile_tiles.dbf'):
         if record['avg_u_kbps'] > upload_speed_minimum: #if above 0.1 mbps
             upload_speeds.append(record['avg_u_kbps']/ 1000)
         if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
-            upload_speeds.append(record['avg_d_kbps']/ 1000)
+            download_speeds.append(record['avg_d_kbps']/ 1000)
         if record['avg_lat_ms'] < latency_maximum and latency_minimum < record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
@@ -93,24 +93,23 @@ for record in DBF('gps_mobile_tiles.dbf'):
 
 
 premises = []
-# premises.append(database_premis(1000000, 4))
-# premises.append(database_premis(10000000, 36))
-# premises.append(database_premis(50000000, 64))
-# premises.append(database_premis(100000000, 90))
-# premises.append(database_premis(500000000, 120))
-# premises.append(database_premis(1000000000, 250))
 
-package_splits= [150,200,650,600,650,550,800,800,650,900]
+# package_splits= [150,200,650,600,650,550,800,800,650,900]
 premise_db_sizes = []
-for i in range(100000000, 300000000, 100000000):
-    premises.append(database_premis(i, round(i*7E-7 + 242.83)))
+# for i in range(100000000, 300000000, 100000000):
+#     premises.append(database_premis(i, round(i*7E-7 + 242.83)))
+#     premise_db_sizes.append(i/ 1000000)
+
+package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 280, 200, 130, 200, 180, 150, 300, 240, 400]
+for i in range(5000000, 100000001, 5000000):
+    premises.append(database_premis(i, package_splits.pop(0)))
     premise_db_sizes.append(i/ 1000000)
 
 
 result_x = []
 result_y = []
 
-contact_book_sizes = [10, 50, 100 ]#, 200, 308, 500, 1000, 2000, 10000]
+contact_book_sizes = [10, 50, 100, 200, 308, 500, 1000, 2000, 3000, 4000]
 book_dict = {}
 
 for i in contact_book_sizes:
@@ -310,7 +309,7 @@ plt.xlabel('Amount of users (in millions)')
 
 for book_key in book_dict:
     s = 'Contact book size: '+ str(book_key)
-    plt.plot(premise_db_sizes, book_dict[book_key], '--o', label=s)
+    plt.plot(premise_db_sizes, book_dict[book_key], marker='.', linestyle='dashed', label=s)
 
 # s = 'U:' +  str(network_cases[0].upload_speed_mean) + ' L:' + str(network_cases[0].latencies_mean)
 # plt.plot(network_cases[0].result_x, network_cases[0].result_y, color = tableau20[0], marker = 'o', label = s)

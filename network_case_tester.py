@@ -85,7 +85,7 @@ for record in DBF('gps_mobile_tiles.dbf'):
         if record['avg_u_kbps'] > upload_speed_minimum: #if above 0.1 mbps
             upload_speeds.append(record['avg_u_kbps']/ 1000)
         if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
-            upload_speeds.append(record['avg_d_kbps']/ 1000)
+            download_speeds.append(record['avg_d_kbps']/ 1000)
         if record['avg_lat_ms'] < latency_maximum and latency_minimum < record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
@@ -107,28 +107,30 @@ network_cases = []
 for i in range(6):
     network_cases.append(network_case(latencies_percentiles[i], upload_speed_percentiles[i]))
 
-
+network_cases.append(network_case(latencies, upload_speeds))
 
 premises = []
 
 #5-100m raw
-package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 280, 200, 130, 200, 180, 150, 300, 240, 400]
-for i in range(5000000, 100000000, 5000000):
-    premises.append(database_premis(i, package_splits.pop(0)))
-
-#100-1000m raw
-#package_splits= [150, 350, 300,400,600,550,500,650,750,450,650,550,650,900,700,700,800,900,850,900]
-#for i in range(100000000, 1000000000, 50000000):
+#package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 280, 200, 130, 200, 180, 150, 300, 240, 400]
+#for i in range(5000000, 100000001, 5000000):
 #    premises.append(database_premis(i, package_splits.pop(0)))
 
+#100-1000m raw
+# package_splits= [150, 350, 300,400,600,550,500,650,750,450,650,550,650,900,700,700,800,900,850,900]
+# for i in range(100000000, 1000000001, 50000000):
+#     premises.append(database_premis(i, package_splits.pop(0)))
+
 #5-100m corrected
-package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 200, 200, 130, 200, 180, 150, 300, 300, 400]
-for i in range(5000000, 100000000, 5000000):
-    premises.append(database_premis(i, package_splits.pop(0)))
+package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 150, 160, 130, 160, 180, 150, 180, 190, 200]
+package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 110, 120, 130, 140, 130, 150, 150, 160, 160, 150, 170]
+for i in range(5000000, 100000001, 5000000):
+   premises.append(database_premis(i, package_splits.pop(0)))
 
 #100-1000m corrected
-#package_splits= [150, 350, 300,400,600,550,500,650,750,450,650,550,650,900,700,700,800,900,850,900]
-#for i in range(100000000, 1000000000, 50000000):
+#package_splits= [150, 250, 300,400,400,400,450,500,550,600,650,550,650,700,700,700,800,800,850,850]
+#package_splits= [150, 250, 300,400,400,400,450,500,550,600,650,550,650,700,700,700,800,800,850,850]
+#for i in range(100000000, 1000000001, 50000000):
 #    premises.append(database_premis(i, package_splits.pop(0)))
 
 
@@ -311,6 +313,7 @@ for premis in premises:
 
 
 
+print("Package splits:", package_splits)
 
 tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),    
              (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),    
@@ -330,20 +333,25 @@ plt.ylabel('Time (in ms)')
 plt.xlabel('Amount of users (in millions)')
 
 s = 'U:' +  str(network_cases[0].upload_speed_mean) + ' L:' + str(network_cases[0].latencies_mean)
-plt.plot(network_cases[0].result_x, network_cases[0].result_y, color = tableau20[0], marker = 'o', label = s)
+plt.plot(network_cases[0].result_x, network_cases[0].result_y, color = tableau20[0],marker = '.', linestyle='dashed', label = s)
 s = 'U:' +  str(network_cases[1].upload_speed_mean) + ' L:' + str(network_cases[1].latencies_mean)
-plt.plot(network_cases[1].result_x, network_cases[1].result_y, color = tableau20[2], marker = 'o', label = s)
+plt.plot(network_cases[1].result_x, network_cases[1].result_y, color = tableau20[2],marker = '.', linestyle='dashed', label = s)
 s = 'U:' +  str(network_cases[2].upload_speed_mean) + ' L:' + str(network_cases[2].latencies_mean)
-plt.plot(network_cases[2].result_x, network_cases[2].result_y, color = tableau20[4], marker = 'o', label = s)
+plt.plot(network_cases[2].result_x, network_cases[2].result_y, color = tableau20[4],marker = '.', linestyle='dashed', label = s)
 s = 'U:' +  str(network_cases[3].upload_speed_mean) + ' L:' + str(network_cases[3].latencies_mean)
-plt.plot(network_cases[3].result_x, network_cases[3].result_y, color = tableau20[6], marker = 'o', label = s)
+plt.plot(network_cases[3].result_x, network_cases[3].result_y, color = tableau20[12],marker = '.', linestyle='dashed', label = s)
 s = 'U:' +  str(network_cases[4].upload_speed_mean) + ' L:' + str(network_cases[4].latencies_mean)
-plt.plot(network_cases[4].result_x, network_cases[4].result_y, color = tableau20[8], marker = 'o', label = s)
+plt.plot(network_cases[4].result_x, network_cases[4].result_y, color = tableau20[8],marker = '.', linestyle='dashed', label = s)
 s = 'U:' +  str(network_cases[5].upload_speed_mean) + ' L:' + str(network_cases[5].latencies_mean)
-plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20[10], marker = 'o', label = s)
+plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20[10],marker = '.',  linestyle='dashed', label = s)
+s = 'U:' +  str(network_cases[6].upload_speed_mean) + ' L:' + str(network_cases[6].latencies_mean)
+plt.plot(network_cases[6].result_x, network_cases[6].result_y, color = tableau20[6], marker = 'o', linewidth=2, label = s)
 
 
 plt.title('Performance with variance in network quality')
-plt.legend()
 plt.show()
 plt.savefig('network_case_plot.png')
+
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+plt.tight_layout()
+plt.savefig('network_case_plot_withLegend.png')

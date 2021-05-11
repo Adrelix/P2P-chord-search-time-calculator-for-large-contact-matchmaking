@@ -95,7 +95,7 @@ for record in DBF('gps_mobile_tiles.dbf'):
         if record['avg_u_kbps'] > upload_speed_minimum: #if above 0.1 mbps
             upload_speeds.append(record['avg_u_kbps']/ 1000)
         if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
-            upload_speeds.append(record['avg_d_kbps']/ 1000)
+            download_speeds.append(record['avg_d_kbps']/ 1000)
         if record['avg_lat_ms'] < latency_maximum and latency_minimum < record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
