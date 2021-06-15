@@ -53,11 +53,13 @@ class track:
         self.node_to_client_upload_time = node_to_client_upload_time
 
 class network_case:
-    def __init__(self, latencies, upload_speeds):
+    def __init__(self, latencies, upload_speeds, download_speeds):
         self.latencies = latencies
         self.upload_speeds = upload_speeds
         self.latencies_mean = round(mean(latencies))
         self.upload_speed_mean = round(mean(upload_speeds))
+        self.download_speeds = download_speeds
+        self.download_speed_mean = round(mean(download_speeds))
         self.result_y = []
         self.result_x = []
 
@@ -90,24 +92,30 @@ for record in DBF('gps_mobile_tiles.dbf'):
             latencies.append(record['avg_lat_ms'])
 
 upload_speeds.sort()
+download_speeds.sort()
 latencies.sort()
 latencies.reverse()
 
 latencies_percentiles = []
-for i in range(0, len(latencies)-(len(latencies)%6), math.floor(len(latencies)/6)):
-    chunk = latencies[i:i +  math.floor(len(latencies)/6)]
+for i in range(0, len(latencies)-(len(latencies)%5), math.floor(len(latencies)/5)):
+    chunk = latencies[i:i +  math.floor(len(latencies)/5)]
     latencies_percentiles.append(chunk)
 
 upload_speed_percentiles = []
-for i in range(0, len(upload_speeds)-(len(upload_speeds)%6), math.floor(len(upload_speeds)/6)):
-    chunk = upload_speeds[i:i +  math.floor(len(upload_speeds)/6)]
+for i in range(0, len(upload_speeds)-(len(upload_speeds)%5), math.floor(len(upload_speeds)/5)):
+    chunk = upload_speeds[i:i +  math.floor(len(upload_speeds)/5)]
     upload_speed_percentiles.append(chunk)
 
-network_cases = []
-for i in range(6):
-    network_cases.append(network_case(latencies_percentiles[i], upload_speed_percentiles[i]))
+download_speed_percentiles = []
+for i in range(0, len(download_speeds)-(len(download_speeds)%5), math.floor(len(download_speeds)/5)):
+    chunk = download_speeds[i:i +  math.floor(len(download_speeds)/5)]
+    download_speed_percentiles.append(chunk)
 
-network_cases.append(network_case(latencies, upload_speeds))
+network_cases = []
+for i in range(5):
+    network_cases.append(network_case(latencies_percentiles[4-i], upload_speed_percentiles[4-i], download_speed_percentiles[4-i]))
+
+network_cases.append(network_case(latencies, upload_speeds, download_speeds))
 
 premises = []
 
@@ -330,20 +338,18 @@ fig = plt.figure()
 plt.ylabel('Time (in ms)')
 plt.xlabel('Amount of users (in millions)')
 
-s = 'U:' +  str(network_cases[0].upload_speed_mean) + ' L:' + str(network_cases[0].latencies_mean)
+s = 'U:' +  str(network_cases[0].upload_speed_mean) + ' D:' +  str(network_cases[0].download_speed_mean) +' L:' + str(network_cases[0].latencies_mean)
 plt.plot(network_cases[0].result_x, network_cases[0].result_y, color = tableau20[0],marker = '.', linestyle='dashed', label = s)
-s = 'U:' +  str(network_cases[1].upload_speed_mean) + ' L:' + str(network_cases[1].latencies_mean)
+s = 'U:' +  str(network_cases[1].upload_speed_mean) + ' D:' +  str(network_cases[1].download_speed_mean) +' L:' + str(network_cases[1].latencies_mean)
 plt.plot(network_cases[1].result_x, network_cases[1].result_y, color = tableau20[2],marker = '.', linestyle='dashed', label = s)
-s = 'U:' +  str(network_cases[2].upload_speed_mean) + ' L:' + str(network_cases[2].latencies_mean)
+s = 'U:' +  str(network_cases[2].upload_speed_mean) + ' D:' +  str(network_cases[2].download_speed_mean) +' L:' + str(network_cases[2].latencies_mean)
 plt.plot(network_cases[2].result_x, network_cases[2].result_y, color = tableau20[4],marker = '.', linestyle='dashed', label = s)
-s = 'U:' +  str(network_cases[3].upload_speed_mean) + ' L:' + str(network_cases[3].latencies_mean)
+s = 'U:' +  str(network_cases[3].upload_speed_mean) + ' D:' +  str(network_cases[3].download_speed_mean) +' L:' + str(network_cases[3].latencies_mean)
 plt.plot(network_cases[3].result_x, network_cases[3].result_y, color = tableau20[12],marker = '.', linestyle='dashed', label = s)
-s = 'U:' +  str(network_cases[4].upload_speed_mean) + ' L:' + str(network_cases[4].latencies_mean)
+s = 'U:' +  str(network_cases[4].upload_speed_mean) + ' D:' +  str(network_cases[4].download_speed_mean) +' L:' + str(network_cases[4].latencies_mean)
 plt.plot(network_cases[4].result_x, network_cases[4].result_y, color = tableau20[8],marker = '.', linestyle='dashed', label = s)
-s = 'U:' +  str(network_cases[5].upload_speed_mean) + ' L:' + str(network_cases[5].latencies_mean)
-plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20[10],marker = '.',  linestyle='dashed', label = s)
-s = 'U:' +  str(network_cases[6].upload_speed_mean) + ' L:' + str(network_cases[6].latencies_mean)
-plt.plot(network_cases[6].result_x, network_cases[6].result_y, color = tableau20[6], marker = 'o', linewidth=2, label = s)
+s = 'U:' +  str(network_cases[5].upload_speed_mean) +' D:' +  str(network_cases[5].download_speed_mean) + ' L:' + str(network_cases[5].latencies_mean)
+plt.plot(network_cases[5].result_x, network_cases[5].result_y, color = tableau20[6], marker = 'o', linewidth=2, label = s)
 
 
 plt.title('Performance with variance in network quality')
