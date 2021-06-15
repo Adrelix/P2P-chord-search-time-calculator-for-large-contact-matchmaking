@@ -77,7 +77,7 @@ upload_speed_minimum = 0.1
 
 
 latency_minimum = 5
-latency_maximum = 500
+latency_maximum = 300
 upload_speed_minimum = 0.1
 download_speed_minimum = 0.1
 for record in DBF('gps_mobile_tiles.dbf'):
@@ -122,16 +122,14 @@ premises = []
 #     premises.append(database_premis(i, package_splits.pop(0)))
 
 #5-100m corrected
-package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 140, 100, 150, 160, 130, 160, 180, 150, 180, 190, 200]
-package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 110, 120, 130, 140, 130, 150, 150, 160, 160, 150, 170]
-for i in range(5000000, 100000001, 5000000):
-   premises.append(database_premis(i, package_splits.pop(0)))
+#package_splits = [20, 40, 40, 50, 60, 100, 90, 70, 110, 110, 120, 130, 140, 130, 150, 150, 160, 160, 150, 170]
+#for i in range(5000000, 100000001, 5000000):
+#   premises.append(database_premis(i, package_splits.pop(0)))
 
 #100-1000m corrected
-#package_splits= [150, 250, 300,400,400,400,450,500,550,600,650,550,650,700,700,700,800,800,850,850]
-#package_splits= [150, 250, 300,400,400,400,450,500,550,600,650,550,650,700,700,700,800,800,850,850]
-#for i in range(100000000, 1000000001, 50000000):
-#    premises.append(database_premis(i, package_splits.pop(0)))
+package_splits= [150,250,300,400,400,400,450,500,550,600,650,550,650,700,650,700,800,800,850,850]
+for i in range(100000000, 1000000001, 50000000):
+    premises.append(database_premis(i, package_splits.pop(0)))
 
 
 
@@ -149,7 +147,7 @@ for premis in premises:
         # All times are in milliseconds
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
-        contact_book_size = 1000
+        contact_book_size = 308
         hash_table_creation_time = 10
         time_to_send_requests = amount_of_packages
 

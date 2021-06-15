@@ -11,21 +11,21 @@ from statistics import mean
 
 
 # amount of users
-database_size = 10000000
+database_size = 500000000
 
 # amount of packages
-amount_of_packages = 34
+amount_of_packages = 600
 
 # amount of iteration for each combination
 i_tot = 3
 
 # range presentated in graph (to avoid extremely high/low times ruining graph)
-graph_cap = 8000
+graph_cap = 40000
 graph_min = 0
 
 # Boundaries
 latency_minimum = 5
-latency_maximum = 500
+latency_maximum = 300
 upload_speed_minimum = 0.1
 download_speed_minimum = 0.1
 
@@ -33,10 +33,7 @@ download_speed_minimum = 0.1
 # https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
 connection_protocol_multiplier = 3
 
-
-# Based on a tcp and tls handshake protocol. Six (one-way) exchanges is required before the connection is established and secure
-# https://learning.oreilly.com/library/view/high-performance-browser/9781449344757/ch04.html#TLS_HANDSHAKE
-connection_protocol_multiplier = 3
+contact_book_size = 2000
 
 
 TRACK_NOT_CONNECTED = "NOT_CONNECTED                "
@@ -127,7 +124,6 @@ for l_perc_id in range (len(latencies_percentiles)):
         # All times are in milliseconds
         amount_of_nodes = database_size
         package_size = math.floor(database_size/amount_of_packages)
-        contact_book_size = 308
         hash_table_creation_time = 10
         time_to_send_requests = amount_of_packages
 
@@ -293,12 +289,16 @@ X = np.reshape(x, (len(np.unique(x)), len(np.unique(y))))
 Y = np.reshape(y, (len(np.unique(x)), len(np.unique(y))))
 Z = np.reshape(z, (len(np.unique(x)), len(np.unique(y))))
 
+
+
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 
-ax.set_ylabel('Network upload speed percentile')
-ax.set_xlabel('Network latency speed percentile')
+ax.set_ylabel('Network bandwidth percentile')
+ax.set_xlabel('Network latency percentile')
 ax.set_zlabel('Time (in ms)')
+
+ax.invert_yaxis()
 
 ls = LightSource(270, 45)
 # To use a custom hillshading mode, override the built-in shading and pass
@@ -307,19 +307,21 @@ rgb = ls.shade(Z, cmap=cm.gist_earth, norm=matplotlib.colors.Normalize(vmin=grap
 surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
                        facecolors=rgb, linewidth=0, antialiased=True, shade=False)
 
-plt.title('Result for contact discovery in a user base of 10M depending on network percentiles')
+plt.title('Fixed user base and contact book sizes  \nwith variance in bandwidth and latency')
 plt.show()
-plt.savefig('plot.png')
+plt.savefig('network_percentile_plot22_500M_2000.png')
 
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.set_xlabel('Network upload speed percentile')
-ax.set_ylabel('Network latency speed percentile')
+ax.set_xlabel('Network bandwidth percentile')
+ax.set_ylabel('Network latency percentile')
 ax.set_zlabel('Time (in ms)')
+ax.invert_yaxis()
+
 rgb = ls.shade(Z, cmap=cm.gist_earth, norm=matplotlib.colors.Normalize(vmin=graph_min, vmax=graph_cap+graph_cap*0.05), vert_exag=0.1, blend_mode='soft')
 surf = ax.plot_surface(Y, X, Z, rstride=1, alpha=1, cstride=1,
                        facecolors=rgb, linewidth=0, antialiased=True, shade=False)
-plt.title('Result for contact discovery in a user base of 10M depending on network percentiles')
+plt.title('Fixed user base and contact book sizes \nwith variance in bandwidth and latency')
 plt.show()
-plt.savefig('plot2.png')
+plt.savefig('network_percentile_plot12_500M_2000.png')

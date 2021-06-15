@@ -18,7 +18,7 @@ p_max = 2000
 p_inc_size = 50
 
 # amount of iteration for each combination
-i_tot = 30
+i_tot = 30 
 
 # range presentated in graph (to avoid extremely high/low times ruining graph)
 graph_cap = 10000
@@ -26,7 +26,7 @@ graph_min = 1000
 
 # Boundaries
 latency_minimum = 5
-latency_maximum = 500
+latency_maximum = 300
 upload_speed_minimum = 0.1
 download_speed_minimum = 0.1
 
@@ -91,7 +91,7 @@ for record in DBF('gps_mobile_tiles.dbf'):
         if record['avg_u_kbps'] > upload_speed_minimum: #if above 0.1 mbps
             upload_speeds.append(record['avg_u_kbps']/ 1000)
         if record['avg_d_kbps'] > download_speed_minimum: #if above 0.1 mbps
-            upload_speeds.append(record['avg_d_kbps']/ 1000)
+            download_speeds.append(record['avg_d_kbps']/ 1000)
         if record['avg_lat_ms'] < latency_maximum and latency_minimum<record['avg_lat_ms'] : #if below 500ms
             latencies.append(record['avg_lat_ms'])
 
@@ -333,7 +333,7 @@ surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1,
 
 plt.title('Effect of package size distribution')
 plt.show()
-plt.savefig('pplot.png')
+plt.savefig('pplot.png', dpi=1200)
 
 
 X = np.reshape(x, (len(np.unique(x)), len(np.unique(y))))
@@ -345,11 +345,13 @@ fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 
 
+
+package_splits = package_splits=   [150, 250, 300,400,400,400,450,500,550,600,650,550,650,700,650,700,800,800,850,850]
 for i in range(len(best_times)-1):
-    ax.plot([best_times[i].amount_of_packages, best_times[i+1].amount_of_packages], [best_times[i].amount_of_users, best_times[i+1].amount_of_users], zs=[best_times[i].time, best_times[i+1].time], color='r')
+    ax.plot([package_splits[i], package_splits[i+1]], [best_times[i].amount_of_users, best_times[i+1].amount_of_users], zs=[best_times[i].time, best_times[i+1].time], color='r')
 
 
-ax.scatter(bestX, bestY, bestZ, color='r')
+ax.scatter(package_splits, bestY, bestZ, color='r')
 
 ax.set_xlabel('Amount of packages')
 ax.set_ylabel('Amount of users (in millions)')
@@ -364,7 +366,7 @@ surf = ax.plot_surface(Y, X, Z, rstride=1, alpha=0.6, cstride=1,
 
 plt.title('Optimal distributions')
 plt.show()
-plt.savefig('pplot2.png')
+plt.savefig('pplot2.png', dpi=1200)
 
 
 fig = plt.figure()
@@ -377,4 +379,4 @@ surf = ax.plot_surface(Y, X, Z, rstride=1, alpha=1, cstride=1,
                        facecolors=rgb, linewidth=0, antialiased=True, shade=False)
 plt.title('Effect of package size distribution')
 plt.show()
-plt.savefig('pplot3.png')
+plt.savefig('pplot3.png', dpi=1200)

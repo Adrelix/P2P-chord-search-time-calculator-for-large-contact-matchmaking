@@ -71,7 +71,7 @@ for record in DBF('gps_mobile_tiles.dbf'):
 # All times are in milliseconds
 database_size = 10000000
 amount_of_nodes = database_size
-amount_of_packages = 34
+amount_of_packages = 25
 package_size = math.floor(database_size/amount_of_packages)
 contact_book_size = 1000
 hash_table_creation_time = 10
@@ -244,12 +244,12 @@ while client_status != CLIENT_DONE:
     update_track_status()
 
     #Terminal aesthetic (works for max 80 tracks):
-    #os.system('cls' if os.name == 'nt' else 'clear')
-    #print("TIME: ", ms_count, "ms", sep='')
-    #print("CLIENT         STATUS: ", client_status, "\n", sep='')
-    #for track in tracks:
-    #   print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
-    #         "              TIME LEFT: ", track.time_left, "ms", sep='')
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("TIME: ", ms_count, "ms", sep='')
+    print("CLIENT         STATUS: ", client_status, "\n", sep='')
+    for track in tracks:
+       print("TRACK #", track.track_id, "       STATUS: ", track.track_status,
+             "              TIME LEFT: ", track.time_left, "ms", sep='')
     #time.sleep(0.01)
 
 print("TIME: ", ms_count, "ms", sep='')
